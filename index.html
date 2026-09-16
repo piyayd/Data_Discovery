@@ -1,0 +1,2408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Discovery | Discovery Application</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        drive: {
+                            surface: '#f8f9fa',
+                            surfaceContainer: '#e9eef6',
+                            surfaceContainerHigh: '#e1e5ea',
+                            primary: '#0b57d0',
+                            onPrimary: '#ffffff',
+                            secondaryContainer: '#c2e7ff',
+                            onSecondaryContainer: '#001d35',
+                            text: '#1f1f1f',
+                            textVariant: '#444746',
+                            outline: '#747775',
+                            border: '#e0e0e0'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        body { color: #1f1f1f; }
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #dadce0; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #bdc1c6; }
+        
+        .tab-content { display: none; opacity: 0; transition: opacity 0.2s ease-in-out; }
+        .tab-content.active { display: block; opacity: 1; animation: fadeIn 0.3s; }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(4px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .bar-segment { transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1); }
+        .view-section { display: none; }
+        .view-section.active { display: flex; flex-direction: column; animation: fadeIn 0.3s; }
+
+        .nav-pill.active {
+            background-color: #c2e7ff;
+            color: #001d35;
+            font-weight: 600;
+        }
+        .nav-pill:not(.active):hover {
+            background-color: #e1e5ea;
+        }
+        .table-row-hover:hover {
+            background-color: #f4f7fc;
+        }
+
+        /* Sidebar Animations & Collapsed States */
+        #main-sidebar {
+            transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .sidebar-collapsed {
+            width: 72px !important;
+        }
+        .sidebar-collapsed .sidebar-text,
+        .sidebar-collapsed .sidebar-chip,
+        .sidebar-collapsed .sidebar-storage-box,
+        .sidebar-collapsed .logo-text {
+            display: none !important;
+        }
+        .sidebar-collapsed .sidebar-header {
+            padding-left: 0 !important;
+            padding-right: 0 !important;
+            justify-content: center !important;
+        }
+        .sidebar-collapsed .sidebar-hamburger {
+            margin-right: 0 !important;
+        }
+        .sidebar-collapsed .sidebar-section-header {
+            justify-content: center !important;
+            padding-left: 0 !important;
+            padding-right: 0 !important;
+        }
+        .sidebar-collapsed .nav-pill {
+            justify-content: center !important;
+            padding-left: 0 !important;
+            padding-right: 0 !important;
+            margin-left: auto;
+            margin-right: auto;
+            width: 44px !important;
+            height: 44px !important;
+            border-radius: 9999px !important;
+        }
+        .sidebar-collapsed .nav-pill svg {
+            margin-right: 0 !important;
+        }
+        .sidebar-collapsed .sidebar-user-box {
+            padding-left: 0 !important;
+            padding-right: 0 !important;
+        }
+        .sidebar-collapsed .sidebar-user-btn {
+            justify-content: center !important;
+            padding-left: 0 !important;
+            padding-right: 0 !important;
+            gap: 0 !important;
+        }
+
+        /* Hide default browser arrow in datalist */
+        #preview-rows-limit::-webkit-calendar-picker-indicator {
+            display: none !important;
+        }
+
+        /* Hide scrollbar for tab menus on small screens */
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
+        .quality-grid {
+            display: flex;
+            flex-direction: column;
+        }
+        .quality-left-col {
+            display: contents;
+        }
+        .quality-trend-area { order: 1; }
+        .quality-steps-area { order: 2; }
+        .quality-summary-area { order: 3; }
+
+        @media (min-width: 1280px) {
+            .quality-grid {
+                flex-direction: row;
+            }
+            .quality-left-col {
+                display: flex;
+                flex-direction: column;
+                gap: 1.5rem;
+                flex: 2 2 0%;
+                min-width: 0;
+            }
+            .quality-steps-area {
+                flex: 1 1 0%;
+            }
+        }
+
+        #detail-content-area.quality-desktop-fit {
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        #detail-content-area.quality-desktop-fit #tab-content-wrapper {
+            flex: 1;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+        }
+        #detail-content-area.quality-desktop-fit #tab-quality.active {
+            flex: 1;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+        }
+        #detail-content-area.quality-desktop-fit .quality-grid {
+            flex: 1;
+            min-height: 0;
+        }
+        #detail-content-area.quality-desktop-fit .quality-left-col {
+            min-height: 0;
+            overflow: hidden;
+        }
+        
+        #detail-content-area.quality-desktop-fit .quality-trend-area,
+        #detail-content-area.quality-desktop-fit .quality-summary-area {
+            flex: 1 1 0%;
+            min-height: 0;
+        }
+        #detail-content-area.quality-desktop-fit .quality-steps-area {
+            min-height: 0;
+        }
+
+        .lineage-node { transition: all 0.2s; }
+        .lineage-node:hover { transform: translateY(-2px); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); }
+        
+        .custom-tooltip-container {
+            position: relative;
+        }
+        .custom-tooltip {
+            visibility: hidden;
+            opacity: 0;
+            position: fixed; 
+            z-index: 1000;
+            background-color: white;
+            border-radius: 6px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05), 0 0 0 1px rgba(0, 0, 0, 0.05);
+            padding: 10px 12px;
+            width: max-content;
+            min-width: 180px;
+            pointer-events: none;
+            transition: opacity 0.15s ease-in-out, visibility 0.15s ease-in-out;
+            font-family: 'Inter', sans-serif;
+            transform: translate(-50%, 10px); 
+        }
+        .custom-tooltip.show {
+            visibility: visible;
+            opacity: 1;
+            transform: translate(-50%, 0); 
+        }
+        
+        .custom-tooltip .tooltip-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 3px;
+            font-size: 11px;
+            line-height: 1.4;
+        }
+        .custom-tooltip .tooltip-row:last-child {
+            margin-bottom: 0;
+            margin-top: 6px;
+            padding-top: 6px;
+            border-top: 1px solid #f3f4f6;
+            justify-content: flex-start;
+            flex-direction: column;
+            color: #6b7280;
+            display: none; 
+        }
+        
+        .custom-tooltip .tooltip-label {
+            color: #9ca3af;
+            margin-right: 12px;
+            font-weight: 500;
+            flex-shrink: 0;
+        }
+        
+        .custom-tooltip .tooltip-value {
+            color: #1f2937;
+            font-weight: 600;
+            font-family: monospace;
+            text-align: right;
+            word-break: break-all;
+        }
+    </style>
+</head>
+
+<body class="flex h-screen overflow-hidden antialiased font-sans bg-white">
+
+    <!-- ================= SIDEBAR ================= -->
+    <aside id="main-sidebar" class="w-[260px] flex flex-col shrink-0 bg-drive-surface border-r border-gray-200 select-none overflow-hidden z-20">
+        
+        <!-- Sidebar Header -->
+        <div class="sidebar-header flex items-center px-4 py-2 h-16 shrink-0 border-b border-transparent transition-all">
+            <button onclick="toggleSidebar()" title="Collapse/Expand Sidebar" class="sidebar-hamburger p-2 mr-1 rounded-full hover:bg-drive-surfaceContainerHigh text-drive-textVariant transition-colors focus:outline-none shrink-0">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                </svg>
+            </button>
+
+            <div class="logo-text flex items-center cursor-pointer select-none overflow-hidden whitespace-nowrap" onclick="showDashboard()">
+                <span class="text-[14px] tracking-tight shrink-0">
+                    <span class="font-semibold text-drive-primary">Discovery</span>
+                    <span class="font-medium text-drive-textVariant ml-1">Application</span>
+                </span>
+            </div>
+        </div>
+
+        <!-- Sidebar Navigation List -->
+        <div class="flex-1 overflow-y-auto px-3 py-2 space-y-1">
+            <button onclick="showDashboard()" id="nav-home-btn" title="Platform Overview" class="nav-pill active w-full flex items-center px-4 py-2.5 rounded-full text-[13px] font-medium transition-all cursor-pointer mb-2">
+                <svg class="w-5 h-5 mr-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+                <span class="sidebar-text truncate">Platform Overview</span>
+            </button>
+            
+            <div class="pt-2">
+                <div class="sidebar-section-header px-4 pb-2 flex items-center justify-between text-drive-textVariant">
+                    <span class="sidebar-text text-[12px] font-semibold tracking-wider uppercase">Data Sources</span>
+                    <span id="total-datasets-count" class="sidebar-chip text-[11px] bg-gray-200 text-gray-700 px-1.5 py-0.5 rounded-full font-mono font-medium">0</span>
+                </div>
+                <div id="dataset-nav-list" class="space-y-0.5"></div>
+            </div>
+        </div>
+        
+        <!-- Sidebar Storage Status -->
+        <div class="sidebar-storage-box p-4 mx-3 mb-4 rounded-2xl bg-drive-surfaceContainer hover:bg-drive-surfaceContainerHigh transition-colors cursor-pointer">
+            <div class="flex items-center text-drive-textVariant mb-2">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"></path></svg>
+                <span class="text-xs font-semibold">Storage Space</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-1.5 mb-1.5">
+                <div class="bg-drive-primary h-1.5 rounded-full" style="width: 68%"></div>
+            </div>
+            <p class="text-[11px] text-drive-textVariant">Used 3.4 TB of 5 TB</p>
+        </div>
+
+        <!-- Sidebar User Account -->
+        <div class="sidebar-user-box shrink-0 px-3 pb-3 pt-1 border-t border-gray-200/70">
+            <button type="button" id="sidebar-user-btn" onclick="toggleUserMenu(event)" title="User Account" aria-haspopup="true" aria-expanded="false" class="sidebar-user-btn w-full flex items-center gap-3 px-2.5 py-2 rounded-2xl hover:bg-drive-surfaceContainerHigh transition-colors text-left focus:outline-none focus:ring-1 focus:ring-drive-primary/40">
+                <div class="w-9 h-9 rounded-full bg-blue-600 flex items-center justify-center text-white font-semibold text-sm shadow shrink-0">
+                    EX
+                </div>
+                <div class="sidebar-text min-w-0 flex-1">
+                    <p class="text-[13px] font-medium text-drive-text truncate leading-tight">Example User</p>
+                    <p class="text-[11px] text-drive-textVariant truncate leading-tight mt-0.5">example@company.com</p>
+                </div>
+                <svg id="user-menu-chevron" class="sidebar-text w-4 h-4 text-drive-textVariant shrink-0 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l4-4 4 4m0 6l-4 4-4-4"></path></svg>
+            </button>
+        </div>
+    </aside>
+
+    <!-- User Account Dropdown Panel -->
+    <div id="user-menu-panel" class="hidden fixed z-50 w-64 bg-white rounded-2xl shadow-lg border border-gray-200 py-2 overflow-hidden" role="menu">
+        <div class="flex items-center gap-3 px-4 py-3 border-b border-gray-100">
+            <div class="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-semibold text-sm shadow shrink-0">
+                EX
+            </div>
+            <div class="min-w-0 flex-1">
+                <p class="text-sm font-medium text-drive-text truncate leading-tight">Example User</p>
+                <p class="text-[11px] text-drive-textVariant truncate leading-tight mt-0.5">example@company.com</p>
+            </div>
+        </div>
+        <button type="button" onclick="handleLogout()" role="menuitem" class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors">
+            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+            <span>Logout</span>
+        </button>
+    </div>
+
+    <!-- ================= CONTENT AREA ================= -->
+    <div class="flex-1 flex flex-col min-w-0 bg-white relative">
+
+        <!-- Main Scrollable Views -->
+        <main class="flex-1 overflow-hidden flex flex-col relative bg-white">
+            
+            <!-- 1. Platform Overview View -->
+            <div id="view-dashboard" class="view-section active flex-1 overflow-y-auto w-full h-full bg-white">
+                <div class="px-6 lg:px-8 pt-8 pb-6 space-y-6 w-full">
+                    <div class="flex justify-between items-end border-b border-gray-100 pb-4">
+                        <div>
+                            <h1 class="text-[22px] font-semibold text-drive-text">Data Platform Overview</h1>
+                            <p class="text-xs text-gray-500 mt-1">Click on a Data Source to view details</p>
+                        </div>
+                        <div class="flex items-center gap-2 shrink-0">
+                            <span class="text-xs font-medium text-drive-textVariant">Time Range:</span>
+                            <button type="button" onclick="openDateModal('dashboard')" id="dashboard-date-picker-btn" class="flex items-center bg-white border border-gray-300 hover:bg-gray-50 hover:border-gray-400 text-drive-text rounded-xl px-3 py-1.5 text-xs font-medium transition-all shadow-xs focus:outline-none focus:ring-1 focus:ring-drive-primary">
+                                <svg class="w-3.5 h-3.5 text-drive-primary mr-1.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                <span id="dashboard-date-btn-label">Last 30 Days</span>
+                                <svg class="w-3.5 h-3.5 ml-1.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="flex justify-between items-center mb-4">
+                            <h2 class="text-xs font-semibold uppercase tracking-wider text-drive-textVariant">All Datasets Table</h2>
+                        </div>
+                        <div class="bg-white border rounded-2xl border-gray-200 overflow-hidden shadow-xs">
+                            <table class="w-full text-sm text-left">
+                                <thead class="text-xs text-drive-textVariant font-medium border-b border-gray-200 bg-drive-surface">
+                                    <tr>
+                                        <th class="px-6 py-3.5 font-medium">Name</th>
+                                        <th class="px-6 py-3.5 font-medium">Source Organization</th>
+                                        <th class="px-6 py-3.5 font-medium">Record Count (Rows)</th>
+                                        <th class="px-6 py-3.5 font-medium text-green-700">Passed</th>
+                                        <th class="px-6 py-3.5 font-medium">Nulls</th>
+                                        <th class="px-6 py-3.5 font-medium text-red-500">Errors</th>
+                                        <th class="px-6 py-3.5 font-medium">Last Modified Date</th>
+                                        <th class="px-6 py-3.5 font-medium">E-Score</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-100" id="global-dataset-list"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. Dataset Detail View -->
+            <div id="view-dataset" class="view-section flex-1 h-full min-w-0 relative bg-white">
+                
+                <!-- Detail Header -->
+                <header class="border-b border-gray-200 px-6 lg:px-8 pt-5 shrink-0 z-10 bg-white min-w-0">
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 pb-3">
+                        <div class="flex items-center w-full min-w-0">
+                            <button onclick="showDashboard()" title="Back to Overview" class="mr-2.5 p-2 -ml-2 rounded-full hover:bg-gray-100 text-drive-textVariant transition-colors">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                            </button>
+                            
+                            <div class="p-2 bg-blue-50 text-drive-primary rounded-xl mr-3 shrink-0">
+                                <svg class="w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/>
+                                </svg>
+                            </div>
+                            
+                            <div class="min-w-0 flex-1">
+                                <h1 class="text-xl font-semibold text-drive-text flex items-center truncate" id="header-title">
+                                    clean_data
+                                </h1>
+                                <p class="text-xs text-drive-textVariant mt-0.5 truncate" id="header-desc">Data Source Details</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Material Tabs -->
+                    <div id="tabs-scroll" class="overflow-x-auto scrollbar-hide w-full cursor-grab select-none">
+                        <nav class="-mb-px flex space-x-7 min-w-max px-1" aria-label="Tabs">
+                            <button onclick="switchTab('overview')" id="tab-btn-overview" class="tab-btn active text-drive-primary whitespace-nowrap py-2.5 px-1 border-b-[3px] border-drive-primary font-medium text-sm flex items-center transition-colors">
+                                Overview
+                            </button>
+                            <button onclick="switchTab('schema')" id="tab-btn-schema" class="tab-btn border-transparent text-drive-textVariant hover:text-drive-text hover:border-gray-300 whitespace-nowrap py-2.5 px-1 border-b-[3px] font-medium text-sm flex items-center transition-colors">
+                                Schema
+                            </button>
+                            <button onclick="switchTab('preview')" id="tab-btn-preview" class="tab-btn border-transparent text-drive-textVariant hover:text-drive-text hover:border-gray-300 whitespace-nowrap py-2.5 px-1 border-b-[3px] font-medium text-sm flex items-center transition-colors">
+                                Preview
+                            </button>
+                            <button onclick="switchTab('quality')" id="tab-btn-quality" class="tab-btn border-transparent text-drive-textVariant hover:text-drive-text hover:border-gray-300 whitespace-nowrap py-2.5 px-1 border-b-[3px] font-medium text-sm flex items-center transition-colors">
+                                Quality Report
+                            </button>
+                            <button onclick="switchTab('lineage')" id="tab-btn-lineage" class="tab-btn border-transparent text-drive-textVariant hover:text-drive-text hover:border-gray-300 whitespace-nowrap py-2.5 px-1 border-b-[3px] font-medium text-sm flex items-center transition-colors">
+                                Lineage
+                            </button>
+                        </nav>
+                    </div>
+                </header>
+
+                <!-- Detail Content Area -->
+                <div id="detail-content-area" class="flex-1 overflow-auto px-6 lg:px-8 pt-8 pb-6 bg-white">
+                    <div id="tab-content-wrapper" class="w-full">
+
+                        <!-- TAB 1: OVERVIEW -->
+                        <div id="tab-overview" class="tab-content active space-y-6">
+                            
+                            <!-- KPI Metrics Grid -->
+                            <section>
+                                <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                                    <div class="bg-drive-surface p-4 rounded-2xl border border-gray-100 flex flex-col justify-between">
+                                        <div class="flex items-center text-drive-textVariant mb-1.5">
+                                            <svg class="w-4 h-4 mr-2 text-drive-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path></svg>
+                                            <span class="text-xs font-medium">Rows</span>
+                                        </div>
+                                        <p id="stat-rows" class="text-2xl font-semibold text-drive-text tracking-tight">2.9M</p>
+                                    </div>
+
+                                    <div class="bg-drive-surface p-4 rounded-2xl border border-gray-100 flex flex-col justify-between">
+                                        <div class="flex items-center text-drive-textVariant mb-1.5">
+                                            <svg class="w-4 h-4 mr-2 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2"></path></svg>
+                                            <span class="text-xs font-medium">Columns</span>
+                                        </div>
+                                        <p id="stat-cols" class="text-2xl font-semibold text-drive-text tracking-tight">13</p>
+                                    </div>
+
+                                    <div class="bg-drive-surface p-4 rounded-2xl border border-gray-100 flex flex-col justify-between">
+                                        <div class="flex items-center text-drive-textVariant mb-1.5">
+                                            <svg class="w-4 h-4 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"></path></svg>
+                                            <span class="text-xs font-medium">Size</span>
+                                        </div>
+                                        <p id="stat-size" class="text-2xl font-semibold text-drive-text tracking-tight">39.49 MB</p>
+                                    </div>
+
+                                    <div class="bg-drive-surface p-4 rounded-2xl border border-gray-100 flex flex-col justify-between">
+                                        <div class="flex items-center text-drive-textVariant mb-1.5">
+                                            <svg class="w-4 h-4 mr-2 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                            <span class="text-xs font-medium">Data Health</span>
+                                        </div>
+                                        <div class="flex items-baseline">
+                                            <p id="stat-health" class="text-2xl font-semibold text-green-700 tracking-tight">92</p>
+                                            <span class="text-xs text-drive-textVariant ml-1">%</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </section>
+
+                            <!-- Primary Info Layout -->
+                            <section class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
+                                <div class="lg:col-span-8 bg-white rounded-2xl border border-gray-200 overflow-hidden flex flex-col shadow-xs">
+                                    <div class="px-5 py-3 border-b border-gray-100 bg-white flex justify-between items-center">
+                                        <h3 class="text-xs font-semibold uppercase tracking-wider text-drive-text">Metadata Properties</h3>
+                                    </div>
+                                    <div class="flex-1 overflow-x-auto">
+                                        <table class="w-full text-xs">
+                                            <tbody class="divide-y divide-gray-100" id="dga-metadata-table"></tbody>
+                                        </table>
+                                    </div>
+                                </div>
+
+                                <div class="lg:col-span-4 flex flex-col space-y-4">
+                                    <div class="bg-white p-4 rounded-2xl border border-gray-200 shadow-xs">
+                                        <h3 class="text-xs font-semibold uppercase tracking-wider text-drive-text mb-2">Efficiency Score (E-Score)</h3>
+                                        <div class="flex items-center justify-between">
+                                            <div class="flex items-baseline">
+                                                <span id="escore-value" class="text-3xl font-semibold text-green-700 leading-none">0.92</span>
+                                                <span class="text-gray-400 text-xs ml-1 font-mono">/ 1.0</span>
+                                            </div>
+                                            <div id="escore-badge" class="bg-green-50 text-green-700 border border-green-200 text-xs px-2.5 py-1 rounded-full font-medium">
+                                                Optimal
+                                            </div>
+                                        </div>
+                                        <p class="text-[11px] text-drive-textVariant mt-2 leading-relaxed">Calculated from: Number of successfully validated and transformed cells / Total cells in target columns</p>
+                                    </div>
+
+                                    <div class="bg-white p-4 rounded-2xl border border-gray-200 shadow-xs flex-1 flex flex-col justify-between">
+                                        <div>
+                                            <h3 class="text-xs font-semibold uppercase tracking-wider text-drive-textVariant mb-2.5">Data Source Owners</h3>
+                                            <div class="flex flex-col space-y-2.5">
+                                                <div class="flex items-center">
+                                                    <div class="w-6 h-6 rounded-full bg-indigo-500 text-white flex items-center justify-center text-[10px] font-bold mr-2.5 shrink-0">E</div>
+                                                    <div class="min-w-0">
+                                                        <p class="text-xs font-medium text-drive-text truncate">Data Engineer</p>
+                                                        <p class="text-[10px] text-gray-400">Maintains Hive Partitioning &amp; Datalake Export</p>
+                                                    </div>
+                                                </div>
+                                                <div class="flex items-center">
+                                                    <div class="w-6 h-6 rounded-full bg-pink-500 text-white flex items-center justify-center text-[10px] font-bold mr-2.5 shrink-0">S</div>
+                                                    <div class="min-w-0">
+                                                        <p class="text-xs font-medium text-drive-text truncate">QA Engineer</p>
+                                                        <p class="text-[10px] text-gray-400">Maintains Interactive Visualization Dashboard (Altair)</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </section>
+                        </div>
+
+                        <!-- TAB 2: SCHEMA -->
+                        <div id="tab-schema" class="tab-content space-y-6">
+                            <div class="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-xs">
+                                <table class="w-full text-left text-sm">
+                                    <thead class="text-xs text-drive-textVariant border-b border-gray-200 bg-drive-surface">
+                                        <tr>
+                                            <th class="px-5 py-3 font-medium">Column Name</th>
+                                            <th class="px-5 py-3 font-medium">Data Type</th>
+                                            <th class="px-5 py-3 font-medium">Description</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-gray-100 bg-white" id="schema-table-body"></tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- TAB 3: PREVIEW -->
+                        <div id="tab-preview" class="tab-content space-y-4">
+                            
+                            <!-- Control Bar -->
+                            <div class="flex flex-wrap items-center justify-between gap-3 bg-drive-surface p-2.5 rounded-2xl border border-gray-200">
+                                
+                                <div class="flex items-center gap-2 px-1 py-1">
+                                    <div class="w-7 h-7 rounded-lg bg-blue-50 text-drive-primary flex items-center justify-center shrink-0">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path></svg>
+                                    </div>
+                                    <div class="flex flex-col">
+                                        <span class="text-[10px] font-medium text-drive-textVariant leading-tight">Total Records</span>
+                                        <span id="preview-total-rows-stat" class="text-xs font-semibold text-drive-text leading-tight">0 Rows</span>
+                                    </div>
+                                </div>
+
+                                <div class="flex flex-wrap items-center gap-3" id="preview-filters-container">
+
+                                    <button type="button" onclick="togglePreviewSearchRow()" id="preview-search-toggle-btn" title="Toggle Column Search" class="relative flex items-center gap-1.5 bg-white border border-gray-300 hover:bg-gray-50 hover:border-gray-400 text-drive-text rounded-xl pl-3 pr-2.5 py-1.5 text-xs font-medium transition-all shadow-xs focus:outline-none focus:ring-1 focus:ring-drive-primary">
+                                        <svg class="w-3.5 h-3.5 text-drive-primary shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M17 11a6 6 0 11-12 0 6 6 0 0112 0z"></path></svg>
+                                        <span>Column Search</span>
+                                        <span id="preview-search-active-dot" class="hidden w-1.5 h-1.5 rounded-full bg-drive-primary"></span>
+                                        <span id="preview-search-close-icon" onclick="event.stopPropagation(); closePreviewSearchRow();" title="Close Search" class="hidden items-center justify-center w-4 h-4 rounded-full text-drive-primary hover:bg-blue-100 transition-colors">
+                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                        </span>
+                                    </button>
+
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-[11px] font-medium text-drive-textVariant">Time Range:</span>
+                                        <button type="button" onclick="openDateModal('preview')" id="date-picker-btn" class="flex items-center bg-white border border-gray-300 hover:bg-gray-50 hover:border-gray-400 text-drive-text rounded-xl px-3 py-1.5 text-xs font-medium transition-all shadow-xs focus:outline-none focus:ring-1 focus:ring-drive-primary">
+                                            <svg class="w-3.5 h-3.5 text-drive-primary mr-1.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                            <span id="date-btn-label">Select Date Range</span>
+                                            <svg class="w-3.5 h-3.5 ml-1.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                                        </button>
+                                    </div>
+
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-[11px] font-medium text-drive-textVariant">Show (Rows):</span>
+                                        <div class="flex items-center bg-white border border-gray-300 rounded-xl pl-2 pr-6 py-1 shadow-xs hover:border-gray-400 focus-within:border-drive-primary focus-within:ring-1 focus-within:ring-drive-primary transition-all w-[75px] relative" title="Set number of rows to display (can type number)">
+                                            <input type="text" id="preview-rows-limit" list="rows-limit-options" value="10" onchange="applyPreviewFilters()" class="w-full bg-transparent text-xs text-drive-text font-medium focus:outline-none text-center m-0 p-0 appearance-none cursor-pointer" autocomplete="off">
+                                            <svg class="w-3.5 h-3.5 text-gray-400 absolute right-1.5 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                                            <datalist id="rows-limit-options">
+                                                <option value="10"></option>
+                                                <option value="25"></option>
+                                                <option value="50"></option>
+                                                <option value="100"></option>
+                                                <option value="All"></option>
+                                            </datalist>
+                                        </div>
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+                            <!-- Data Preview Table Container -->
+                            <div class="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-xs">
+                                <div class="overflow-x-auto">
+                                    <table class="w-full text-xs text-left">
+                                        <thead class="text-xs text-drive-textVariant font-medium border-b border-gray-200 bg-drive-surface" id="preview-head"></thead>
+                                        <tbody class="divide-y divide-gray-100 bg-white font-mono" id="preview-body"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <!-- TAB 4: QUALITY REPORT -->
+                        <div id="tab-quality" class="tab-content space-y-6">
+                            
+                            <div class="quality-grid gap-6">
+
+                                <div class="quality-left-col min-w-0">
+                                <!-- Export Quality Trend chart -->
+                                <div class="quality-trend-area min-w-0 bg-white p-5 rounded-2xl border border-gray-200 flex flex-col shadow-xs">
+                                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center w-full mb-4 gap-3">
+                                        <div>
+                                            <h3 class="text-xs font-semibold tracking-wider uppercase text-drive-textVariant text-left">Data Quality Trend</h3>
+                                            <p class="text-[11px] text-drive-textVariant mt-1 text-left">Click on a graph point to inspect Pipeline Execution Details for that day.</p>
+                                        </div>
+                                        <div class="flex items-center gap-2 shrink-0">
+                                            <span class="text-[11px] font-medium text-drive-textVariant">Time Range:</span>
+                                            <button type="button" onclick="openDateModal('quality')" id="quality-date-picker-btn" class="flex items-center bg-white border border-gray-300 hover:bg-gray-50 hover:border-gray-400 text-drive-text rounded-xl px-3 py-1.5 text-xs font-medium transition-all shadow-xs focus:outline-none focus:ring-1 focus:ring-drive-primary">
+                                                <svg class="w-3.5 h-3.5 text-drive-primary mr-1.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                                <span id="quality-date-btn-label">Select Date Range</span>
+                                                <svg class="w-3.5 h-3.5 ml-1.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="w-full h-[300px] xl:h-auto xl:flex-1 xl:min-h-0 relative">
+                                        <canvas id="qualityChart"></canvas>
+                                    </div>
+                                    <p id="execution-date-label" class="mt-4 text-[11px] font-medium text-drive-primary bg-blue-50 border border-blue-200 px-3 py-1 rounded-full hidden self-center">Data for: Today</p>
+                                </div>
+
+                                <!-- Summary Row: Top Issues + AI Recommendation -->
+                                <div class="quality-summary-area min-w-0 grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div class="bg-white px-5 py-4 rounded-2xl border border-gray-200 shadow-xs flex flex-col min-h-0">
+                                        <h3 class="text-xs font-semibold tracking-wider uppercase text-drive-textVariant mb-2 shrink-0">TOP ISSUES</h3>
+                                        <div id="quality-top-issues-container" class="flex-1 min-h-0 overflow-y-auto"></div>
+                                    </div>
+
+                                    <div class="bg-white p-5 rounded-2xl border border-gray-200 shadow-xs flex flex-col min-h-0">
+                                        <div class="flex items-center mb-6 text-drive-text shrink-0">
+                                            <svg class="w-4 h-4 text-purple-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>
+                                            <h3 class="text-xs font-semibold uppercase tracking-wider">AI Improvement Recommendations</h3>
+                                        </div>
+
+                                        <div class="flex-1 min-h-0 flex flex-col justify-end">
+                                            <div class="relative w-full pl-24 border-l border-b border-gray-200 pb-2 mb-4 min-h-0 overflow-y-auto">
+                                                <div class="absolute inset-0 left-24 border-t border-transparent flex justify-between px-2 pointer-events-none z-0">
+                                                    <div class="h-full border-l border-gray-100"></div><div class="h-full border-l border-gray-100"></div>
+                                                    <div class="h-full border-l border-gray-100"></div><div class="h-full border-l border-gray-100"></div>
+                                                </div>
+
+                                                <div id="ai-recommender-chart" class="space-y-3.5 relative z-10 pt-2"></div>
+                                            </div>
+
+                                            <div class="pl-24 shrink-0">
+                                                <div class="flex justify-between text-[10px] text-gray-400 font-mono -mt-4">
+                                                    <span>0%</span><span>25%</span><span>50%</span><span>75%</span><span>100%</span>
+                                                </div>
+                                                <div class="mt-3 flex flex-wrap gap-3 text-[11px] text-drive-textVariant">
+                                                    <span class="font-medium text-drive-text">Column Group:</span>
+                                                    <span class="flex items-center"><div class="w-2.5 h-2.5 bg-blue-500 rounded-sm mr-1"></div> clean_date</span>
+                                                    <span class="flex items-center"><div class="w-2.5 h-2.5 bg-green-500 rounded-sm mr-1"></div> country_code</span>
+                                                    <span class="flex items-center"><div class="w-2.5 h-2.5 bg-purple-500 rounded-sm mr-1"></div> price</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                </div>
+
+                                <div class="quality-steps-area min-w-0 flex flex-col gap-3 xl:sticky xl:top-0">
+                                    <div class="shrink-0 xl:sticky xl:top-0 xl:z-10 bg-white p-3.5 rounded-2xl border border-gray-200 shadow-xs flex items-center justify-between gap-2">
+                                        <h3 class="text-xs font-semibold uppercase tracking-wider text-drive-text">Execution Steps</h3>
+                                        <div class="flex items-center gap-2 text-[10px] text-drive-textVariant shrink-0">
+                                            <span class="flex items-center"><span class="w-2 h-2 bg-green-500 rounded-sm mr-1"></span>Pass</span>
+                                            <span class="flex items-center"><span class="w-2 h-2 bg-red-500 rounded-sm mr-1"></span>Fail</span>
+                                            <span class="flex items-center"><span class="w-2 h-2 bg-gray-300 rounded-sm mr-1"></span>Skip</span>
+                                        </div>
+                                    </div>
+                                    <div id="pipeline-steps-container" class="max-h-[670px] xl:max-h-none xl:flex-1 min-h-0 flex flex-col gap-2.5 overflow-y-auto rounded-2xl border border-gray-200 bg-drive-surface/50 p-2"></div>
+                                </div>
+
+                            </div>
+                        </div>
+
+                        <!-- TAB 5: LINEAGE -->
+                        <div id="tab-lineage" class="tab-content space-y-6 min-h-[400px]">
+                            <div class="bg-gray-50/50 p-6 rounded-2xl border border-gray-200 w-full overflow-x-auto shadow-inner relative">
+                                <div class="flex items-center justify-between mb-6 sticky left-0 z-20">
+                                    <h3 class="text-xs font-semibold tracking-wider uppercase text-gray-800">Trade Data Lineage</h3>
+                                </div>
+                                <div class="flex items-center justify-center min-w-[1000px] py-10 relative" id="lineage-container">
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- ================= MODAL DATE RANGE PICKER ================= -->
+    <div id="m3-date-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs hidden transition-opacity">
+        <div class="bg-white rounded-[28px] w-full max-w-[420px] mx-4 shadow-2xl border border-gray-100 overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-200">
+            
+            <div class="bg-drive-surfaceContainer px-6 pt-5 pb-4 border-b border-gray-200">
+                <span class="text-[11px] font-medium tracking-wider uppercase text-drive-textVariant">Select Date Range</span>
+                <h3 class="text-xl font-normal text-drive-text mt-1 flex items-center">
+                    <svg class="w-5 h-5 text-drive-primary mr-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                    Set Start - End Date
+                </h3>
+            </div>
+
+            <div class="p-6 space-y-4 bg-white">
+                <div class="flex flex-wrap gap-1.5 pb-1">
+                    <button type="button" id="preset-btn-7" onclick="setPresetRange(7)" class="preset-btn px-2.5 py-1 rounded-full text-[11px] font-medium bg-gray-100 hover:bg-drive-secondaryContainer hover:text-drive-onSecondaryContainer text-drive-textVariant transition-colors">Last 7 Days</button>
+                    <button type="button" id="preset-btn-30" onclick="setPresetRange(30)" class="preset-btn px-2.5 py-1 rounded-full text-[11px] font-medium bg-gray-100 hover:bg-drive-secondaryContainer hover:text-drive-onSecondaryContainer text-drive-textVariant transition-colors">Last 30 Days</button>
+                    <button type="button" id="preset-btn-365" onclick="setPresetRange(365)" class="preset-btn px-2.5 py-1 rounded-full text-[11px] font-medium bg-gray-100 hover:bg-drive-secondaryContainer hover:text-drive-onSecondaryContainer text-drive-textVariant transition-colors">Current Year</button>
+                </div>
+
+                <div class="space-y-1">
+                    <label class="block text-[11px] font-medium text-drive-textVariant">Start Date</label>
+                    <div class="relative flex items-center border border-gray-300 hover:border-gray-400 focus-within:border-drive-primary focus-within:ring-1 focus-within:ring-drive-primary rounded-xl px-3 py-2 bg-white transition-all">
+                        <input type="date" id="modal-date-start" onchange="clearPresetActiveState()" class="w-full bg-transparent text-xs text-drive-text focus:outline-none cursor-pointer">
+                    </div>
+                </div>
+
+                <div class="space-y-1">
+                    <label class="block text-[11px] font-medium text-drive-textVariant">End Date</label>
+                    <div class="relative flex items-center border border-gray-300 hover:border-gray-400 focus-within:border-drive-primary focus-within:ring-1 focus-within:ring-drive-primary rounded-xl px-3 py-2 bg-white transition-all">
+                        <input type="date" id="modal-date-end" onchange="clearPresetActiveState()" class="w-full bg-transparent text-xs text-drive-text focus:outline-none cursor-pointer">
+                    </div>
+                </div>
+            </div>
+
+            <div class="px-6 py-3.5 bg-drive-surface border-t border-gray-100 flex items-center justify-between">
+                <button type="button" onclick="resetDateModal()" class="text-xs font-medium text-red-600 hover:text-red-700 px-3 py-1.5 rounded-full hover:bg-red-50 transition-colors">
+                    Clear Dates
+                </button>
+
+                <div class="flex items-center space-x-2">
+                    <button type="button" onclick="closeDateModal()" class="text-xs font-medium text-drive-textVariant hover:text-drive-text px-4 py-2 rounded-full hover:bg-gray-100 transition-colors">
+                        Cancel
+                    </button>
+                    <button type="button" onclick="saveDateModal()" class="text-xs font-medium bg-drive-primary text-white hover:bg-blue-700 px-5 py-2 rounded-full shadow-xs transition-colors">
+                        Apply
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+    
+    <!-- ================= MODAL: INVESTIGATE ROWS ================= -->
+    <div id="investigate-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs hidden transition-opacity p-4" onclick="if(event.target === this) closeInvestigateModal()">
+        <div class="bg-white rounded-[24px] w-full max-w-2xl mx-4 shadow-2xl border border-gray-100 overflow-hidden flex flex-col max-h-[85vh] animate-in fade-in zoom-in-95 duration-200">
+
+            <div class="bg-drive-surfaceContainer px-6 pt-5 pb-4 border-b border-gray-200 flex items-start justify-between gap-4 shrink-0">
+                <div class="min-w-0">
+                    <span class="text-[11px] font-medium tracking-wider uppercase text-drive-textVariant">Investigate Rows</span>
+                    <h3 id="investigate-modal-title" class="text-lg font-semibold text-drive-text mt-1 truncate"></h3>
+                    <p id="investigate-modal-subtitle" class="text-xs text-drive-textVariant mt-1"></p>
+                </div>
+                <button type="button" onclick="closeInvestigateModal()" class="shrink-0 p-1.5 rounded-full hover:bg-black/5 text-drive-textVariant hover:text-drive-text transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+
+            <div class="overflow-auto flex-1">
+                <table class="w-full text-left border-collapse">
+                    <thead id="investigate-modal-head" class="sticky top-0 bg-white z-10"></thead>
+                    <tbody id="investigate-modal-body" class="divide-y divide-gray-100 font-mono text-xs"></tbody>
+                </table>
+            </div>
+
+            <div class="px-6 py-3.5 bg-drive-surface border-t border-gray-100 flex items-center justify-between shrink-0">
+                <span id="investigate-modal-count" class="text-[11px] text-drive-textVariant"></span>
+                <button type="button" onclick="closeInvestigateModal()" class="text-xs font-medium bg-drive-primary text-white hover:bg-blue-700 px-5 py-2 rounded-full shadow-xs transition-colors">
+                    Close
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Custom Tooltips -->
+    <div id="data-tooltip" class="custom-tooltip">
+        <div class="tooltip-row">
+            <span class="tooltip-label">col</span>
+            <span class="tooltip-value" id="tooltip-col"></span>
+        </div>
+        <div class="tooltip-row">
+            <span class="tooltip-label">role</span>
+            <span class="tooltip-value" id="tooltip-role"></span>
+        </div>
+        <div class="tooltip-row">
+            <span class="tooltip-label">status</span>
+            <span class="tooltip-value" id="tooltip-status"></span>
+        </div>
+        <div class="tooltip-row">
+            <span class="tooltip-label">count</span>
+            <span class="tooltip-value" id="tooltip-count"></span>
+        </div>
+        <div class="tooltip-row" id="tooltip-failed-values-container">
+            <div>Top Failed Values <span id="tooltip-failed-example" class="font-semibold text-gray-800 ml-1"></span></div>
+        </div>
+    </div>
+
+    <div id="header-column-tooltip" class="custom-tooltip flex flex-col gap-1.5">
+        <div class="flex items-center justify-between gap-3">
+            <div class="text-xs font-semibold text-gray-800" id="header-tooltip-name"></div>
+            <span id="header-tooltip-type" class="px-1.5 py-0.5 rounded text-[9px] font-mono bg-blue-50 text-blue-700 border border-blue-100"></span>
+        </div>
+        <div class="text-[11px] text-gray-600 leading-relaxed" id="header-tooltip-desc" style="max-width: 240px;"></div>
+        <div class="text-[10px] text-gray-400 mt-1 pt-2 border-t border-gray-100">Click to sort data</div>
+    </div>
+
+    <script>
+        function formatUpdatedDate(d) {
+            return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+        }
+        
+        const latestRunDate = formatUpdatedDate(new Date());
+
+        const catalog = {
+            "Data Quality Engine (Colab Notebook v1.3)": [
+                { id: "clean_data", name: "clean_data", path: "my_datalake/clean_data/run_date=*/*.parquet", rows: "3,000", escore: 0.92, updated: latestRunDate, passed: 92, nulls: 2, invalid: 6 }
+            ]
+        };
+
+        const dbDetails = {
+            "clean_data": {
+                meta: {
+                    title: "clean_data", 
+                    desc: "Clean Output from Data Quality Engine v1.3 — Processed via Monad Pipeline (SquishyEngine) and written as Hive-Partitioned Parquet by run_date", 
+                    rows: "3000", cols: 4, size: "76.03 KB", eScore: 0.92,
+                    passed: 92, invalid: 6, nulls: 2,
+                    alert: { active: true, msg: "Pipeline attempted to parse dates using parse_thai (Buddhist Era) first for all rows, causing ~90% Exceptions at this step, even though ISO format (parse_iso) accounts for 60% of total data — Recommended to prioritize parse_iso to reduce unnecessary Exceptions and CPU load." },
+                    dga: {
+                        title: "Data Quality Pipeline Results (Simulated Data)", 
+                        desc: "Data simulated via generate_complex_data() and processed through Monad-based Pipeline before exporting to Hive-Partitioned Parquet with Quality Summary embedded in Footer Metadata.",
+                        publisher: "Data Engineering Team (Internal Colab Notebook)", 
+                        category: "Data Engineering / Data Quality (ETL Pipeline)",
+                        frequency: "Simulated Daily Batch — Last 5 days", 
+                        visibility: "Internal / Sample Dataset", 
+                        license: "None (Internal Sandbox Data)"
+                    }
+                },
+                lineage: {
+                    upstream: [
+                        { name: "generate_complex_data()", type: "Python Mock Generator", zone: "Landing Zone" }
+                    ],
+                    downstream: [
+                        { name: "qa_load_and_visualize()", type: "Altair QA Dashboard", zone: "Serving Zone" }
+                    ]
+                },
+                schema: [
+                    { name: "clean_date", type: "DATE", desc: "Date converted from source date_col containing multiple formats (ISO / US / UK / BE)", rule: "must_exist → parse_thai → parse_uk → parse_us → parse_iso" },
+                    { name: "country_code", type: "VARCHAR", desc: "ISO country code converted from country_col (TH / USA / UK / JP / CN -> standard code)", rule: "must_exist → to_iso_code" },
+                    { name: "price", type: "FLOAT", desc: "Numeric value converted from price_col which may contain currency symbols or commas ($, ฿, ,)", rule: "must_exist → to_float" },
+                    { name: "run_date", type: "VARCHAR", desc: "Hive partition based on Pipeline run date (Simulated last 5 days)", rule: "partition_cols=['run_date']" }
+                ],
+                sample: [
+                    ["2024-01-31", "US", "1000.00", "2026-09-09"],
+                    ["2024-01-01", "US", "50.00", "2026-09-09"],
+                    ["2024-01-01", "UK", "50.00", "2026-09-09"],
+                    ["2024-01-31", "TH", "50.00", "2026-09-09"],
+                    ["2024-01-01", "US", "100.00", "2026-09-09"],
+                    ["2024-01-31", "TH", "100.00", "2026-09-09"],
+                    ["", "TH", "50.00", "2026-09-09"],
+                    ["", "US", "100.00", "2026-09-09"],
+                    ["2024-01-01", "", "", "2026-09-09"],
+                    ["2024-01-01", "", "100.00", "2026-09-09"],
+                    ["2024-01-01", "TH", "", "2026-09-09"]
+                ],
+                quality: {
+                    steps: [
+                        { target: "clean_date (Col 1)",
+                          processes: [
+                              { name: "must_exist", pass: 100, fail: 0, skip: 0 },
+                              { name: "parse_thai", pass: 10, fail: 90, skip: 0 },
+                              { name: "parse_uk", pass: 10, fail: 80, skip: 10 },
+                              { name: "parse_us", pass: 10, fail: 70, skip: 20 },
+                              { name: "parse_iso", pass: 61, fail: 9, skip: 30 },
+                              { name: "chain_exhausted", pass: 0, fail: 100, skip: 0 }
+                          ]
+                        },
+                        { target: "country_code (Col 2)",
+                          processes: [
+                              { name: "must_exist", pass: 98, fail: 2, skip: 0 },
+                              { name: "to_iso_code", pass: 95, fail: 3, skip: 2 },
+                              { name: "chain_exhausted", pass: 0, fail: 100, skip: 0 }
+                          ]
+                        },
+                        { target: "price (Col 3)",
+                          processes: [
+                              { name: "must_exist", pass: 95, fail: 5, skip: 0 },
+                              { name: "to_float", pass: 91, fail: 4, skip: 5 },
+                              { name: "chain_exhausted", pass: 0, fail: 100, skip: 0 }
+                          ]
+                        }
+                    ],
+                    ai_recommender: [
+                        { name: "to_iso_code", val: 95, color: "bg-green-500", group: "country_code" },
+                        { name: "to_float", val: 91, color: "bg-purple-500", group: "price" },
+                        { name: "parse_iso", val: 60, color: "bg-blue-500", group: "clean_date" },
+                        { name: "parse_uk", val: 10, color: "bg-blue-300", group: "clean_date" },
+                        { name: "parse_us", val: 10, color: "bg-blue-300", group: "clean_date" },
+                        { name: "parse_thai", val: 10, color: "bg-blue-300", group: "clean_date" }
+                    ]
+                }
+            }
+        };
+
+        let currentDataset = null;
+        let currentFilter = "";
+        let rowFilterState = null; 
+        let isSidebarCollapsed = false;
+        let qualityChartInstance = null;
+
+        let rawQualityTrendData = []; 
+        let qualityStartDate = "";
+        let qualityEndDate = "";
+        let currentModalContext = 'preview';
+
+        let selectedStartDate = "";
+        let selectedEndDate = "";
+        let dashboardStartDate = "";
+        let dashboardEndDate = "";
+        let columnFilters = {};
+        let previewSearchVisible = false;
+        let columnSorts = {}; 
+
+        function closeBanner(id) {
+            const banner = document.getElementById(id);
+            if (banner) banner.classList.add('hidden');
+        }
+
+        function enableDragToScroll(el) {
+            if (!el) return;
+            let isDown = false;
+            let moved = false;
+            let startX = 0;
+            let startScrollLeft = 0;
+            const DRAG_THRESHOLD = 6;
+
+            el.addEventListener('pointerdown', (e) => {
+                if (e.pointerType !== 'mouse' || e.button !== 0) return; 
+                isDown = true;
+                moved = false;
+                startX = e.clientX;
+                startScrollLeft = el.scrollLeft;
+            });
+
+            window.addEventListener('pointermove', (e) => {
+                if (!isDown || e.pointerType !== 'mouse') return;
+                const dx = e.clientX - startX;
+                if (Math.abs(dx) > DRAG_THRESHOLD && !moved) {
+                    moved = true;
+                    el.classList.remove('cursor-grab');
+                    el.classList.add('cursor-grabbing');
+                }
+                if (moved) {
+                    e.preventDefault();
+                    el.scrollLeft = startScrollLeft - dx;
+                }
+            });
+
+            const endDrag = (e) => {
+                if (!isDown) return;
+                if (e && e.pointerType && e.pointerType !== 'mouse') return;
+                isDown = false;
+                el.classList.remove('cursor-grabbing');
+                el.classList.add('cursor-grab');
+            };
+            window.addEventListener('pointerup', endDrag);
+            window.addEventListener('pointercancel', endDrag);
+
+            el.addEventListener('click', (e) => {
+                if (moved) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                }
+                moved = false;
+            }, true);
+        }
+
+        function toggleSidebar() {
+            const sidebar = document.getElementById("main-sidebar");
+            isSidebarCollapsed = !isSidebarCollapsed;
+            if (isSidebarCollapsed) {
+                sidebar.classList.add("sidebar-collapsed");
+            } else {
+                sidebar.classList.remove("sidebar-collapsed");
+            }
+            closeUserMenu();
+        }
+
+        let isUserMenuOpen = false;
+
+        function toggleUserMenu(event) {
+            if (event) event.stopPropagation();
+
+            if (isUserMenuOpen) {
+                closeUserMenu();
+                return;
+            }
+
+            const panel = document.getElementById('user-menu-panel');
+            const btn = document.getElementById('sidebar-user-btn');
+            if (!panel || !btn) return;
+
+            const btnRect = btn.getBoundingClientRect();
+            const panelWidth = panel.offsetWidth || 256;
+
+            let left = btnRect.left;
+            if (left + panelWidth > window.innerWidth - 8) {
+                left = window.innerWidth - panelWidth - 8;
+            }
+            if (left < 8) left = 8;
+
+            panel.style.left = left + 'px';
+            panel.style.bottom = (window.innerHeight - btnRect.top + 8) + 'px';
+
+            panel.classList.remove('hidden');
+            btn.setAttribute('aria-expanded', 'true');
+            isUserMenuOpen = true;
+
+            const chevron = document.getElementById('user-menu-chevron');
+            if (chevron) chevron.classList.add('rotate-180');
+
+            document.addEventListener('click', handleOutsideUserMenuClick);
+            document.addEventListener('keydown', handleUserMenuEscape);
+        }
+
+        function closeUserMenu() {
+            const panel = document.getElementById('user-menu-panel');
+            const btn = document.getElementById('sidebar-user-btn');
+            if (panel) panel.classList.add('hidden');
+            if (btn) btn.setAttribute('aria-expanded', 'false');
+            isUserMenuOpen = false;
+
+            const chevron = document.getElementById('user-menu-chevron');
+            if (chevron) chevron.classList.remove('rotate-180');
+
+            document.removeEventListener('click', handleOutsideUserMenuClick);
+            document.removeEventListener('keydown', handleUserMenuEscape);
+        }
+
+        function handleOutsideUserMenuClick(e) {
+            const panel = document.getElementById('user-menu-panel');
+            const btn = document.getElementById('sidebar-user-btn');
+            if (!panel || !btn) return;
+            if (!panel.contains(e.target) && !btn.contains(e.target)) {
+                closeUserMenu();
+            }
+        }
+
+        function handleUserMenuEscape(e) {
+            if (e.key === 'Escape') closeUserMenu();
+        }
+
+        function handleLogout() {
+            closeUserMenu();
+            if (confirm('Are you sure you want to logout?')) {
+                location.reload();
+            }
+        }
+
+        function getAllDatasetsFlat() {
+            let list = [];
+            for (const [zone, items] of Object.entries(catalog)) {
+                items.forEach(item => {
+                    list.push({ ...item, zoneName: zone });
+                });
+            }
+            return list;
+        }
+
+        function showDashboard() {
+            currentDataset = null;
+            document.getElementById('view-dataset').classList.remove('active');
+            document.getElementById('view-dashboard').classList.add('active');
+            document.getElementById('nav-home-btn').classList.add('active');
+            renderSidebar(); 
+            renderGlobalDatasetTable();
+        }
+
+        function renderSidebar() {
+            const listContainer = document.getElementById("dataset-nav-list");
+            listContainer.innerHTML = "";
+            const allFiles = getAllDatasetsFlat();
+            document.getElementById("total-datasets-count").innerText = allFiles.length;
+
+            allFiles.forEach(item => {
+                const isActive = item.id === currentDataset;
+                const itemElement = document.createElement("div");
+                itemElement.innerHTML = `
+                    <a href="#" onclick="loadDataset('${item.id}', '${item.zoneName}'); return false;" 
+                       title="${item.name} (${item.zoneName})"
+                       class="flex items-center px-3 py-2 rounded-xl text-[13px] transition-all nav-pill group select-none ${isActive ? 'active shadow-xs' : 'text-drive-textVariant'}">
+                        <div class="mr-3 shrink-0">
+                            <svg class="w-4 h-4 ${isActive ? 'text-drive-primary' : 'text-blue-500 group-hover:text-drive-primary'} transition-colors" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/>
+                            </svg>
+                        </div>
+                        <span class="sidebar-text truncate flex-1 font-medium">${item.name}</span>
+                    </a>
+                `;
+                listContainer.appendChild(itemElement.firstElementChild);
+            });
+        }
+
+        function renderGlobalDatasetTable() {
+            const tbody = document.getElementById("global-dataset-list");
+            const allFiles = getAllDatasetsFlat();
+
+            tbody.innerHTML = allFiles.map(item => {
+                let escoreColor = "text-green-700 bg-green-50 border-green-200";
+                if(item.escore < 0.9) escoreColor = "text-orange-700 bg-orange-50 border-orange-200";
+                if(item.escore < 0.7) escoreColor = "text-red-700 bg-red-50 border-red-200";
+                
+                return `
+                <tr class="table-row-hover transition-colors border-b border-gray-100 last:border-0 cursor-pointer" onclick="loadDataset('${item.id}', '${item.zoneName}')">
+                    <td class="px-6 py-3.5 whitespace-nowrap">
+                        <div class="flex items-center">
+                            <svg class="w-4 h-4 mr-2.5 text-blue-500" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/>
+                            </svg>
+                            <span class="text-xs font-semibold text-drive-text">${item.name}</span>
+                        </div>
+                    </td>
+                    <td class="px-6 py-3.5 whitespace-nowrap"><span class="text-xs text-drive-textVariant">${item.zoneName}</span></td>
+                    <td class="px-6 py-3.5 whitespace-nowrap text-xs font-mono text-drive-textVariant">${item.rows}</td>
+                    <td class="px-6 py-3.5 whitespace-nowrap text-xs font-medium text-green-700">${item.passed}%</td>
+                    <td class="px-6 py-3.5 whitespace-nowrap text-xs ${item.nulls > 10 ? 'text-orange-600 font-medium' : 'text-drive-textVariant'}">${item.nulls}%</td>
+                    <td class="px-6 py-3.5 whitespace-nowrap text-xs ${item.invalid > 10 ? 'text-red-600 font-medium' : 'text-drive-textVariant'}">${item.invalid}%</td>
+                    <td class="px-6 py-3.5 whitespace-nowrap text-xs text-drive-textVariant">${item.updated}</td>
+                    <td class="px-6 py-3.5 whitespace-nowrap">
+                        <span class="px-2 py-0.5 rounded-full text-[11px] font-mono font-medium border ${escoreColor}">
+                            ${(item.escore * 100).toFixed(0)}%
+                        </span>
+                    </td>
+                </tr>
+            `}).join("");
+        }
+
+        function renderQualityTopIssues() {
+            const container = document.getElementById("quality-top-issues-container");
+            const db = dbDetails[currentDataset] || dbDetails["clean_data"];
+
+            const totalRowsStr = db.meta.rows;
+            const totalRowsNum = parseFloat(totalRowsStr) * (totalRowsStr.includes('M') ? 1000000 : (totalRowsStr.includes('B') ? 1000000000 : 1));
+
+            const rankColors = [
+                "bg-red-50 text-red-600",
+                "bg-orange-50 text-orange-600",
+                "bg-amber-50 text-amber-700"
+            ];
+
+            let issues = (db.quality.steps || []).map(step => {
+                const colMatch = step.target.match(/^([\w_]+)/);
+                const colName = colMatch ? colMatch[1] : step.target;
+
+                let worst = null;
+                step.processes.forEach(proc => {
+                    if (proc.name === 'must_exist' || proc.name === 'chain_exhausted') return;
+                    if (proc.fail > 0 && (!worst || proc.fail > worst.fail)) worst = proc;
+                });
+                if (!worst) return null;
+
+                const count = Math.round((worst.fail / 100) * totalRowsNum);
+                const failedValue = getMockFailExample(colName, worst.name);
+                return { column: colName, count, failedValue };
+            }).filter(Boolean);
+
+            issues.sort((a, b) => b.count - a.count);
+            const topIssuesData = issues.slice(0, 3).map((item, i) => ({
+                ...item,
+                color: rankColors[i] || rankColors[rankColors.length - 1]
+            }));
+
+            if (topIssuesData.length === 0) {
+                container.innerHTML = `<p class="text-xs text-drive-textVariant py-4">No significant issues found in this dataset</p>`;
+                return;
+            }
+
+            container.innerHTML = `
+                <table class="w-full text-left border-collapse select-none">
+                    <thead>
+                        <tr class="text-[10px] uppercase tracking-wider text-drive-textVariant border-b border-gray-100">
+                            <th class="pb-2 font-semibold">Column</th>
+                            <th class="pb-2 font-semibold text-right">Failed Count</th>
+                            <th class="pb-2 font-semibold text-left pl-4">Issue Type</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${topIssuesData.map(item => `
+                            <tr class="border-b border-gray-50 last:border-0">
+                                <td class="py-2 pr-3 min-w-0">
+                                    <div class="flex items-center text-drive-text min-w-0">
+                                        <svg class="w-4 h-4 mr-2.5 text-gray-400 shrink-0" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/>
+                                        </svg>
+                                        <span class="text-xs font-mono text-gray-700 truncate" title="${item.column}">${item.column}</span>
+                                    </div>
+                                </td>
+                                <td class="py-2 pr-3 text-right">
+                                    <span class="text-xs font-mono tabular-nums text-gray-700">${item.count.toLocaleString()}</span>
+                                </td>
+                                <td class="py-2 pl-4 text-left">
+                                    <span class="text-[11px] font-medium px-2.5 py-0.5 rounded-full inline-block shrink-0 ${item.color}" title="Most frequent failed value in this column">'${item.failedValue}'</span>
+                                </td>
+                            </tr>
+                        `).join("")}
+                    </tbody>
+                </table>
+            `;
+        }
+
+        function loadDataset(id, zoneName) {
+            currentDataset = id;
+            currentFilter = "";
+            rowFilterState = null;
+            columnFilters = {};
+            columnSorts = {}; 
+            
+            document.getElementById('view-dashboard').classList.remove('active');
+            document.getElementById('view-dataset').classList.add('active');
+            document.getElementById('nav-home-btn').classList.remove('active');
+
+            const db = dbDetails[id] || dbDetails["clean_data"]; 
+            renderSidebar();
+
+            selectedStartDate = "";
+            selectedEndDate = "";
+            updateDateButtonLabel();
+            document.getElementById('preview-rows-limit').value = "10";
+            
+            const headEl = document.getElementById("preview-head");
+            if (headEl) headEl.removeAttribute('data-schema-key');
+
+            switchTab('overview'); 
+
+            document.getElementById("header-title").innerText = db.meta.title;
+            document.getElementById("header-desc").innerText = db.meta.desc;
+
+            document.getElementById("stat-rows").innerText = db.meta.rows;
+            document.getElementById("stat-cols").innerText = db.meta.cols;
+            document.getElementById("stat-size").innerText = db.meta.size;
+            document.getElementById("stat-health").innerText = db.meta.passed;
+
+            const escore = db.meta.eScore;
+            const badge = document.getElementById("escore-badge");
+            const val = document.getElementById("escore-value");
+            val.innerText = escore.toFixed(2);
+            
+            if (escore >= 0.9) {
+                val.className = "text-3xl font-semibold text-green-700 leading-none";
+                badge.className = "bg-green-50 text-green-700 border border-green-200 text-xs px-2.5 py-1 rounded-full font-medium";
+                badge.innerText = "Optimal";
+            } else {
+                val.className = "text-3xl font-semibold text-red-700 leading-none";
+                badge.className = "bg-red-50 text-red-700 border border-red-200 text-xs px-2.5 py-1 rounded-full font-medium";
+                badge.innerText = "Needs Review";
+            }
+
+            renderDgaMetadata(db.meta.dga);
+            renderSchemaTable(db.schema);
+            renderPreview(db.schema, db.sample);
+            renderMonadSquishy(db.quality);
+            renderQualityTopIssues();
+            renderLineage(db.lineage, db.meta.title);
+            
+            generateRawQualityData();
+            clearQualityDateFilter(); 
+        }
+
+        function renderDgaMetadata(dga) {
+            const tbody = document.getElementById("dga-metadata-table");
+            const fields = [
+                { key: "Title", val: dga.title, prop: "title" },
+                { key: "Description", val: dga.desc, prop: "desc" },
+                { key: "Publisher", val: dga.publisher, prop: "publisher" },
+                { key: "Category", val: dga.category, prop: "category" },
+                { key: "Update Frequency", val: dga.frequency, prop: "frequency" },
+                { key: "Visibility", val: dga.visibility, prop: "visibility" },
+                { key: "License", val: dga.license, prop: "license" }
+            ];
+            tbody.innerHTML = fields.map((f) => `
+                <tr class="hover:bg-gray-50 transition-colors group">
+                    <td class="px-5 py-2.5 text-drive-textVariant font-medium w-2/5 border-r border-gray-100 bg-gray-50/40">${f.key}</td>
+                    <td class="px-5 py-2.5 text-drive-text font-normal leading-relaxed">
+                        <div class="flex items-center justify-between gap-2">
+                            <span id="dga-val-${f.prop}" class="flex-1">${f.val}</span>
+                            <button type="button" onclick="editDgaField('${f.prop}')" title="Edit data" class="shrink-0 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity text-gray-400 hover:text-drive-primary p-1 rounded-md hover:bg-blue-50">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `).join("");
+        }
+
+        function editDgaField(prop) {
+            const span = document.getElementById(`dga-val-${prop}`);
+            if (!span || span.querySelector('input')) return;
+            const currentVal = span.innerText;
+            span.innerHTML = `<input type="text" value="${currentVal.replace(/"/g, '&quot;')}" class="w-full border border-drive-primary rounded-lg px-2 py-1 text-xs text-drive-text focus:outline-none focus:ring-1 focus:ring-drive-primary" />`;
+            const input = span.querySelector('input');
+            input.focus();
+            input.select();
+
+            let isSaved = false;
+            const save = () => {
+                if (isSaved) return;
+                isSaved = true;
+                const newVal = input.value.trim() || currentVal;
+                span.innerText = newVal;
+                const db = dbDetails[currentDataset];
+                if (db && db.meta && db.meta.dga) {
+                    db.meta.dga[prop] = newVal;
+                }
+            };
+            const cancel = () => {
+                if (isSaved) return;
+                isSaved = true;
+                span.innerText = currentVal;
+            };
+
+            input.addEventListener('blur', save);
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') { e.preventDefault(); input.blur(); }
+                else if (e.key === 'Escape') { e.preventDefault(); cancel(); }
+            });
+        }
+
+        function openDateModal(context = 'preview') {
+            currentModalContext = context;
+            clearPresetActiveState();
+            if (context === 'preview') {
+                document.getElementById('modal-date-start').value = selectedStartDate;
+                document.getElementById('modal-date-end').value = selectedEndDate;
+            } else if (context === 'quality') {
+                document.getElementById('modal-date-start').value = qualityStartDate;
+                document.getElementById('modal-date-end').value = qualityEndDate;
+            } else if (context === 'dashboard') {
+                document.getElementById('modal-date-start').value = dashboardStartDate;
+                document.getElementById('modal-date-end').value = dashboardEndDate;
+            }
+            document.getElementById('m3-date-modal').classList.remove('hidden');
+        }
+
+        function closeDateModal() {
+            document.getElementById('m3-date-modal').classList.add('hidden');
+        }
+
+        function saveDateModal() {
+            if (currentModalContext === 'preview') {
+                selectedStartDate = document.getElementById('modal-date-start').value;
+                selectedEndDate = document.getElementById('modal-date-end').value;
+                updateDateButtonLabel();
+                applyPreviewFilters();
+            } else if (currentModalContext === 'quality') {
+                qualityStartDate = document.getElementById('modal-date-start').value;
+                qualityEndDate = document.getElementById('modal-date-end').value;
+                updateQualityDateButtonLabel();
+                applyQualityFilters();
+            } else if (currentModalContext === 'dashboard') {
+                dashboardStartDate = document.getElementById('modal-date-start').value;
+                dashboardEndDate = document.getElementById('modal-date-end').value;
+                updateDashboardDateButtonLabel();
+            }
+            closeDateModal();
+        }
+
+        function resetDateModal() {
+            document.getElementById('modal-date-start').value = "";
+            document.getElementById('modal-date-end').value = "";
+            clearPresetActiveState();
+            if (currentModalContext === 'preview') {
+                selectedStartDate = "";
+                selectedEndDate = "";
+                updateDateButtonLabel();
+                applyPreviewFilters();
+            } else if (currentModalContext === 'quality') {
+                qualityStartDate = "";
+                qualityEndDate = "";
+                updateQualityDateButtonLabel();
+                applyQualityFilters();
+            } else if (currentModalContext === 'dashboard') {
+                dashboardStartDate = "";
+                dashboardEndDate = "";
+                updateDashboardDateButtonLabel();
+            }
+            closeDateModal();
+        }
+
+        function setPresetRange(days) {
+            const today = new Date();
+            const past = new Date();
+            past.setDate(today.getDate() - days);
+
+            const formatDate = (d) => d.toISOString().split('T')[0];
+            document.getElementById('modal-date-start').value = formatDate(past);
+            document.getElementById('modal-date-end').value = formatDate(today);
+
+            clearPresetActiveState();
+            const activeBtn = document.getElementById('preset-btn-' + days);
+            if (activeBtn) {
+                activeBtn.classList.remove('bg-gray-100', 'text-drive-textVariant');
+                activeBtn.classList.add('bg-drive-secondaryContainer', 'text-drive-onSecondaryContainer', 'font-semibold');
+            }
+        }
+
+        function clearPresetActiveState() {
+            document.querySelectorAll('.preset-btn').forEach(btn => {
+                btn.classList.remove('bg-drive-secondaryContainer', 'text-drive-onSecondaryContainer', 'font-semibold');
+                btn.classList.add('bg-gray-100', 'text-drive-textVariant');
+            });
+        }
+
+        function updateDateButtonLabel() {
+            const labelEl = document.getElementById("date-btn-label");
+            const btnEl = document.getElementById("date-picker-btn");
+
+            if (selectedStartDate || selectedEndDate) {
+                const s = selectedStartDate || '...';
+                const e = selectedEndDate || '...';
+                labelEl.innerText = `${s} to ${e}`;
+                btnEl.classList.add("bg-blue-50", "border-blue-300", "text-drive-primary");
+            } else {
+                labelEl.innerText = "Select Date Range";
+                btnEl.classList.remove("bg-blue-50", "border-blue-300", "text-drive-primary");
+            }
+        }
+
+        function updateQualityDateButtonLabel() {
+            const labelEl = document.getElementById("quality-date-btn-label");
+            const btnEl = document.getElementById("quality-date-picker-btn");
+
+            if (qualityStartDate || qualityEndDate) {
+                const s = qualityStartDate || '...';
+                const e = qualityEndDate || '...';
+                labelEl.innerText = `${s} to ${e}`;
+                btnEl.classList.add("bg-blue-50", "border-blue-300", "text-drive-primary");
+            } else {
+                labelEl.innerText = "Select Date Range";
+                btnEl.classList.remove("bg-blue-50", "border-blue-300", "text-drive-primary");
+            }
+        }
+
+        function updateDashboardDateButtonLabel() {
+            const labelEl = document.getElementById("dashboard-date-btn-label");
+            const btnEl = document.getElementById("dashboard-date-picker-btn");
+
+            if (dashboardStartDate || dashboardEndDate) {
+                const s = dashboardStartDate || '...';
+                const e = dashboardEndDate || '...';
+                labelEl.innerText = `${s} to ${e}`;
+                btnEl.classList.add("bg-blue-50", "border-blue-300", "text-drive-primary");
+            } else {
+                labelEl.innerText = "Last 30 Days";
+                btnEl.classList.remove("bg-blue-50", "border-blue-300", "text-drive-primary");
+            }
+        }
+
+        function clearDashboardDateFilter() {
+            dashboardStartDate = "";
+            dashboardEndDate = "";
+            updateDashboardDateButtonLabel();
+        }
+
+        function clearQualityDateFilter() {
+            qualityStartDate = "";
+            qualityEndDate = "";
+            updateQualityDateButtonLabel();
+            applyQualityFilters();
+        }
+
+        function applyQualityFilters() {
+            let filteredData = rawQualityTrendData;
+            if (qualityStartDate) {
+                filteredData = filteredData.filter(d => d.date >= qualityStartDate);
+            }
+            if (qualityEndDate) {
+                filteredData = filteredData.filter(d => d.date <= qualityEndDate);
+            }
+            initQualityChart(filteredData);
+            syncQualityStepsHeight();
+        }
+
+        function generateRawQualityData() {
+            rawQualityTrendData = [];
+            let today = new Date();
+            const totalDays = 31;
+
+            for (let i = totalDays - 1; i >= 0; i--) {
+                let d = new Date(today);
+                d.setDate(d.getDate() - i);
+                let dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                let labelStr = `${d.getDate()}/${d.getMonth() + 1}`;
+
+                const dayIndex = totalDays - 1 - i; 
+
+                const gross = 100;
+                let basePassRate = 0.74 + 0.06 * Math.sin(dayIndex / 4.2) + (dayIndex / totalDays) * 0.06;
+
+                if (dayIndex >= 8 && dayIndex <= 14) {
+                    basePassRate -= 0.4 * (1 - Math.abs(dayIndex - 11) / 3.2);
+                }
+                if (dayIndex >= 20 && dayIndex <= 24) {
+                    basePassRate -= 0.15 * (1 - Math.abs(dayIndex - 22) / 2.4);
+                }
+
+                basePassRate = Math.max(0.15, Math.min(0.95, basePassRate));
+
+                let pass = Math.round(gross * basePassRate);
+                let remaining = gross - pass;
+
+                const inIncident = (dayIndex >= 8 && dayIndex <= 14) || (dayIndex >= 20 && dayIndex <= 24);
+                let failRatio = inIncident ? 0.78 : 0.6;
+                let fail = Math.round(remaining * failRatio);
+                let skip = remaining - fail;
+
+                rawQualityTrendData.push({ date: dateStr, label: labelStr, pass, fail, skip });
+            }
+        }
+
+        function handleColumnSearch(e) {
+            const colIndex = e.target.getAttribute('data-col');
+            columnFilters[colIndex] = e.target.value.toLowerCase().trim();
+            applyPreviewFilters();
+        }
+
+        function togglePreviewSearchRow() {
+            previewSearchVisible = !previewSearchVisible;
+            syncPreviewSearchToggleUI();
+            if (previewSearchVisible) {
+                const row = document.getElementById('preview-search-row');
+                const firstInput = row ? row.querySelector('input') : null;
+                if (firstInput) firstInput.focus();
+            }
+        }
+
+        function closePreviewSearchRow() {
+            if (!previewSearchVisible) return;
+            previewSearchVisible = false;
+            syncPreviewSearchToggleUI();
+        }
+
+        function syncPreviewSearchToggleUI() {
+            const row = document.getElementById('preview-search-row');
+            const btn = document.getElementById('preview-search-toggle-btn');
+            if (row) row.classList.toggle('hidden', !previewSearchVisible);
+            if (btn) {
+                btn.classList.toggle('bg-blue-50', previewSearchVisible);
+                btn.classList.toggle('bg-white', !previewSearchVisible);
+                btn.classList.toggle('border-drive-primary', previewSearchVisible);
+                btn.classList.toggle('border-gray-300', !previewSearchVisible);
+                btn.classList.toggle('text-drive-primary', previewSearchVisible);
+            }
+            const closeIcon = document.getElementById('preview-search-close-icon');
+            if (closeIcon) {
+                closeIcon.classList.toggle('hidden', !previewSearchVisible);
+                closeIcon.classList.toggle('flex', previewSearchVisible);
+            }
+            const dot = document.getElementById('preview-search-active-dot');
+            if (dot) {
+                const hasActiveFilters = Object.values(columnFilters).some(v => v && String(v).length > 0);
+                dot.classList.toggle('hidden', !(hasActiveFilters && !previewSearchVisible));
+            }
+        }
+
+        function getSortIcon(index) {
+            const dir = columnSorts[index];
+            if (dir === 'asc') {
+                return `<svg class="w-3.5 h-3.5 text-drive-primary transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24" title="Sort ascending"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 15l7-7 7 7"></path></svg>`;
+            } else if (dir === 'desc') {
+                return `<svg class="w-3.5 h-3.5 text-drive-primary transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24" title="Sort descending"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"></path></svg>`;
+            }
+            return `<svg class="w-3.5 h-3.5 text-gray-400 group-hover:text-drive-primary transition-colors shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" title="Click to sort"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l4-4 4 4m0 6l-4 4-4-4"></path></svg>`;
+        }
+
+        function getTypeIcon(type, isHighlighted = false) {
+            const colorClass = isHighlighted ? 'text-red-400' : 'text-gray-400';
+            const t = (type || '').toUpperCase();
+
+            if (t === 'DATE' || t === 'DATETIME' || t === 'TIMESTAMP') {
+                return `<svg class="w-3.5 h-3.5 ${colorClass} shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" title="Date"><rect x="3" y="4" width="18" height="17" rx="2" stroke-width="2"></rect><path stroke-linecap="round" stroke-width="2" d="M16 2.5v4M8 2.5v4M3 9.5h18"></path></svg>`;
+            }
+            if (t === 'FLOAT' || t === 'INT' || t === 'INTEGER' || t === 'NUMBER' || t === 'DOUBLE') {
+                return `<span class="text-xs font-bold ${colorClass} shrink-0 leading-none" title="Numeric">#</span>`;
+            }
+            return `<span class="text-[10px] font-bold ${colorClass} shrink-0 leading-none tracking-tighter" title="Text">Abc</span>`;
+        }
+
+        function toggleSort(colIndex) {
+            if (!columnSorts[colIndex]) {
+                columnSorts[colIndex] = 'asc';
+            } else if (columnSorts[colIndex] === 'asc') {
+                columnSorts[colIndex] = 'desc';
+            } else {
+                delete columnSorts[colIndex];
+            }
+            updateHeaderSortIcons();
+            applyPreviewFilters();
+        }
+
+        function updateHeaderSortIcons() {
+            const headEl = document.getElementById("preview-head");
+            if (!headEl) return;
+            const db = dbDetails[currentDataset] || dbDetails["clean_data"];
+            db.schema.forEach((col, idx) => {
+                const iconContainer = document.getElementById(`sort-icon-${idx}`);
+                const labelEl = document.getElementById(`sort-label-${idx}`);
+                if (iconContainer) {
+                    iconContainer.innerHTML = getSortIcon(idx);
+                }
+                if (labelEl) {
+                    if (columnSorts[idx]) {
+                        labelEl.classList.add('font-semibold', 'text-drive-primary');
+                    } else {
+                        labelEl.classList.remove('font-semibold', 'text-drive-primary');
+                    }
+                }
+            });
+        }
+
+        function applyPreviewFilters() {
+            const db = dbDetails[currentDataset] || dbDetails["clean_data"];
+            const rowsLimitVal = document.getElementById("preview-rows-limit").value;
+
+            document.getElementById("preview-total-rows-stat").innerText = `${db.meta.rows} Rows`;
+
+            const dateColIndex = db.schema.findIndex(c => c.type === 'DATE');
+
+            let filteredData = db.sample.filter(row => {
+                let matchesDate = true;
+                if (dateColIndex !== -1 && (selectedStartDate || selectedEndDate)) {
+                    const rowDateStr = String(row[dateColIndex]).trim();
+                    if (/^\d{4}-\d{2}-\d{2}$/.test(rowDateStr)) {
+                        if (selectedStartDate && rowDateStr < selectedStartDate) matchesDate = false;
+                        if (selectedEndDate && rowDateStr > selectedEndDate) matchesDate = false;
+                    } else if (selectedStartDate || selectedEndDate) {
+                        matchesDate = false;
+                    }
+                }
+
+                let matchesRule = true;
+                if (rowFilterState && rowFilterState.state) {
+                    const targetColIndex = db.schema.findIndex(c => c.name === rowFilterState.colName);
+                    if (targetColIndex !== -1) {
+                        const val = String(row[targetColIndex]).trim();
+                        const isSkip = !val || val === 'N/A' || val === 'null' || val === '';
+                        const isFail = !isSkip && (val.includes('/') || /[ก-๙]/.test(val) || (val.includes('-') && val.split('-')[0].length !== 4));
+                        const isPass = !isSkip && !isFail;
+
+                        if (rowFilterState.state === 'skip') matchesRule = isSkip;
+                        else if (rowFilterState.state === 'fail') matchesRule = isFail;
+                        else if (rowFilterState.state === 'pass') matchesRule = isPass;
+                    }
+                }
+
+                return matchesDate && matchesRule;
+            });
+
+            if (Object.keys(columnFilters).length > 0) {
+                filteredData = filteredData.filter(row => {
+                    for (let colIndex in columnFilters) {
+                        const query = columnFilters[colIndex];
+                        if (query) {
+                            const cellVal = String(row[colIndex] || '').toLowerCase();
+                            if (!cellVal.includes(query)) return false;
+                        }
+                    }
+                    return true;
+                });
+            }
+
+            const activeSortCols = Object.keys(columnSorts)
+                .map(k => parseInt(k, 10))
+                .filter(colIdx => !!columnSorts[colIdx]);
+
+            if (activeSortCols.length > 0) {
+                const compareCell = (valA, valB, colType, dir) => {
+                    let isEmptyA = valA === undefined || valA === null || valA === '' || valA === 'N/A' || valA === 'null';
+                    let isEmptyB = valB === undefined || valB === null || valB === '' || valB === 'N/A' || valB === 'null';
+
+                    if (isEmptyA && isEmptyB) return 0;
+                    if (isEmptyA) return 1;
+                    if (isEmptyB) return -1;
+
+                    if (colType === 'FLOAT' || colType === 'INT' || colType === 'NUMBER') {
+                        let numA = parseFloat(String(valA).replace(/,/g, ''));
+                        let numB = parseFloat(String(valB).replace(/,/g, ''));
+                        if (!isNaN(numA) && !isNaN(numB)) {
+                            return dir === 'asc' ? numA - numB : numB - numA;
+                        }
+                    }
+                    else if (colType === 'DATE') {
+                        let dateA = new Date(valA).getTime();
+                        let dateB = new Date(valB).getTime();
+                        if (!isNaN(dateA) && !isNaN(dateB)) {
+                            return dir === 'asc' ? dateA - dateB : dateB - dateA;
+                        }
+                    }
+
+                    let strA = String(valA);
+                    let strB = String(valB);
+                    let comp = strA.localeCompare(strB, 'en', { numeric: true, sensitivity: 'base' });
+                    return dir === 'asc' ? comp : -comp;
+                };
+
+                filteredData = filteredData
+                    .map((row, originalIndex) => ({ row, originalIndex }))
+                    .sort((a, b) => {
+                        for (const colIdx of activeSortCols) {
+                            const dir = columnSorts[colIdx];
+                            const colType = db.schema[colIdx]?.type;
+                            const result = compareCell(a.row[colIdx], b.row[colIdx], colType, dir);
+                            if (result !== 0) return result;
+                        }
+                        return a.originalIndex - b.originalIndex;
+                    })
+                    .map(item => item.row); 
+            }
+
+            let totalFound = filteredData.length;
+            
+            let displayCount;
+            const limitStr = String(rowsLimitVal).toLowerCase().trim();
+            if (limitStr === 'all' || limitStr === 'ทั้งหมด') {
+                displayCount = totalFound;
+            } else {
+                displayCount = parseInt(limitStr, 10);
+                if (isNaN(displayCount) || displayCount <= 0) displayCount = 10; 
+            }
+
+            let pagedData = filteredData.slice(0, displayCount);
+
+            renderPreviewTable(db.schema, pagedData);
+        }
+
+        function escapeHtml(str) {
+            return String(str ?? '').replace(/[&<>"']/g, (ch) => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+            }[ch]));
+        }
+
+        function renderSchemaTable(schema) {
+            const tbody = document.getElementById("schema-table-body");
+            if (!tbody) return;
+            tbody.innerHTML = schema.map((col, idx) => `
+                <tr class="table-row-hover transition-colors group">
+                    <td class="px-5 py-3 font-medium text-drive-text whitespace-nowrap">${col.name}</td>
+                    <td class="px-5 py-3">
+                        <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-mono bg-gray-100/80 text-gray-500 border border-gray-200">${col.type}</span>
+                    </td>
+                    <td class="px-5 py-3 text-drive-textVariant">
+                        <div class="flex items-center justify-between gap-2">
+                            <span id="schema-desc-${idx}" class="flex-1">${escapeHtml(col.desc) || 'No description for this column'}</span>
+                            <button type="button" onclick="editSchemaDesc(${idx})" title="Edit description" class="shrink-0 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity text-gray-400 hover:text-drive-primary p-1 rounded-md hover:bg-blue-50">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `).join("");
+        }
+
+        function editSchemaDesc(idx) {
+            const span = document.getElementById(`schema-desc-${idx}`);
+            if (!span || span.querySelector('input')) return;
+            const db = dbDetails[currentDataset] || dbDetails["clean_data"];
+            const col = db.schema[idx];
+            if (!col) return;
+
+            const currentVal = col.desc || '';
+            const placeholder = 'No description for this column';
+            span.innerHTML = `<input type="text" value="${escapeHtml(currentVal).replace(/"/g, '&quot;')}" class="w-full border border-drive-primary rounded-lg px-2 py-1 text-xs text-drive-text focus:outline-none focus:ring-1 focus:ring-drive-primary" />`;
+            const input = span.querySelector('input');
+            input.focus();
+            input.select();
+
+            let isSaved = false;
+            const save = () => {
+                if (isSaved) return;
+                isSaved = true;
+                const newVal = input.value.trim();
+                col.desc = newVal;
+                span.innerText = newVal || placeholder;
+            };
+            const cancel = () => {
+                if (isSaved) return;
+                isSaved = true;
+                span.innerText = currentVal || placeholder;
+            };
+
+            input.addEventListener('blur', save);
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') { e.preventDefault(); input.blur(); }
+                else if (e.key === 'Escape') { e.preventDefault(); cancel(); }
+            });
+        }
+
+        function renderPreview(schema, data) {
+            applyPreviewFilters();
+        }
+
+        function renderPreviewTable(schema, data) {
+            let schemaIndices = schema.map((_, i) => i);
+
+            if (currentFilter) {
+                 const filterLower = currentFilter.toLowerCase();
+                 const targetColIndex = schema.findIndex(c => c.name.toLowerCase() === filterLower);
+                 if (targetColIndex !== -1) {
+                     schemaIndices = [0, targetColIndex];
+                     schemaIndices = [...new Set(schemaIndices)].sort((a,b)=>a-b);
+                 }
+            }
+
+            const headEl = document.getElementById("preview-head");
+            const currentSchemaKey = currentDataset + '_' + currentFilter;
+            
+            if (headEl.getAttribute('data-schema-key') !== currentSchemaKey) {
+                headEl.innerHTML = `
+                    <tr>
+                        ${schemaIndices.map(index => {
+                            const col = schema[index];
+                            const isHighlighted = currentFilter && col.name.toLowerCase() === currentFilter.toLowerCase();
+                            const isSorted = !!columnSorts[index];
+                            return `<th class="px-5 py-2 text-left font-medium ${isHighlighted ? 'text-red-700 bg-red-50' : 'text-drive-textVariant'} border-b border-gray-200 align-middle select-none">
+                                
+                                <div class="flex flex-col gap-1 py-0.5" data-col-name="${col.name}" data-col-desc="${(col.desc || 'No description for this column').replace(/"/g, '&quot;')}" data-col-type="${col.type}" onmousemove="showHeaderTooltip(event, this)" onmouseleave="hideHeaderTooltip()">
+                                    
+                                    <div class="flex items-center justify-between gap-2 cursor-pointer group hover:text-drive-primary transition-colors" onclick="toggleSort(${index})">
+                                        <div class="flex items-center min-w-0 gap-1.5">
+                                            ${getTypeIcon(col.type, isHighlighted)}
+                                            <span id="sort-label-${index}" class="truncate ${isSorted ? 'font-semibold text-drive-primary' : ''}">${col.name}</span>
+                                            <svg class="w-3 h-3 ml-1 text-gray-400 group-hover:text-drive-primary shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                        </div>
+                                        <div id="sort-icon-${index}" class="shrink-0 flex items-center">
+                                            ${getSortIcon(index)}
+                                        </div>
+                                    </div>
+                                </div>
+
+                            </th>`;
+                        }).join("")}
+                    </tr>
+                    <tr id="preview-search-row" class="bg-gray-50/80 border-b border-gray-200 hidden">
+                        ${schemaIndices.map(index => `
+                            <th class="px-2 py-1.5 font-normal align-middle">
+                                <input type="text" placeholder="Search..." data-col="${index}" value="${columnFilters[index] || ''}" oninput="handleColumnSearch(event)" class="w-full text-[11px] px-2 py-1.5 border border-gray-300 rounded shadow-sm focus:outline-none focus:border-drive-primary focus:ring-1 focus:ring-drive-primary transition-all bg-white text-drive-text placeholder-gray-400">
+                            </th>
+                        `).join("")}
+                    </tr>
+                `;
+                headEl.setAttribute('data-schema-key', currentSchemaKey);
+            } else {
+                updateHeaderSortIcons();
+            }
+            
+            document.getElementById("preview-body").innerHTML = data.length > 0 ? data.map(row => `
+                <tr class="hover:bg-gray-50 transition-colors">
+                    ${schemaIndices.map(i => {
+                        const cell = row[i];
+                        const type = schema[i].type;
+                        const isHighlighted = currentFilter && schema[i].name.toLowerCase() === currentFilter.toLowerCase();
+                        let format = cell !== undefined && cell !== null ? cell : '';
+                        if(type === 'FLOAT') format = `<span class="font-mono text-left block w-full text-drive-textVariant">${cell}</span>`;
+                        else if(type === 'DATE') format = `<span class="font-mono text-drive-textVariant">${cell}</span>`;
+                        return `<td class="px-5 py-2.5 ${isHighlighted ? 'bg-red-50/40 font-medium text-red-900' : 'text-drive-text'} whitespace-nowrap border-b border-gray-100">${format}</td>`;
+                    }).join("")}
+                </tr>
+            `).join("") : `<tr><td colspan="${schemaIndices.length}" class="px-5 py-12 text-center text-drive-textVariant bg-gray-50/50">No records found matching the criteria.</td></tr>`;
+
+            syncPreviewSearchToggleUI();
+        }
+
+        function showTooltip(event, colName, ruleName, status, count, failExample = null) {
+            const tooltip = document.getElementById('data-tooltip');
+            
+            document.getElementById('tooltip-col').innerText = colName;
+            document.getElementById('tooltip-role').innerText = ruleName;
+            document.getElementById('tooltip-status').innerText = status;
+            document.getElementById('tooltip-count').innerText = count.toLocaleString();
+            
+            const failContainer = document.getElementById('tooltip-failed-values-container');
+            const failExampleEl = document.getElementById('tooltip-failed-example');
+            
+            if (status === 'failed' && failExample && failExample !== 'undefined') {
+                failExampleEl.innerText = `'${failExample}' (${count.toLocaleString()})`;
+                failContainer.style.display = 'flex';
+            } else {
+                failContainer.style.display = 'none';
+            }
+            
+            const x = event.clientX;
+            const y = event.clientY;
+            
+            tooltip.style.left = x + 'px';
+            tooltip.style.top = (y + 15) + 'px'; 
+            
+            const tooltipRect = tooltip.getBoundingClientRect();
+            if (tooltipRect.right > window.innerWidth) {
+                tooltip.style.left = (window.innerWidth - tooltipRect.width / 2 - 10) + 'px';
+            }
+            if (tooltipRect.bottom > window.innerHeight) {
+                 tooltip.style.top = (y - tooltipRect.height - 15) + 'px';
+                 tooltip.style.transform = 'translate(-50%, -10px)';
+            } else {
+                 tooltip.style.transform = 'translate(-50%, 0)';
+            }
+            
+            tooltip.classList.add('show');
+        }
+        
+        function hideTooltip() {
+            const tooltip = document.getElementById('data-tooltip');
+            tooltip.classList.remove('show');
+        }
+
+        function showHeaderTooltip(event, el) {
+            const tooltip = document.getElementById('header-column-tooltip');
+
+            document.getElementById('header-tooltip-name').innerText = el.dataset.colName;
+            document.getElementById('header-tooltip-desc').innerText = el.dataset.colDesc;
+            document.getElementById('header-tooltip-type').innerText = el.dataset.colType;
+
+            const x = event.clientX;
+            const y = event.clientY;
+
+            tooltip.style.left = x + 'px';
+            tooltip.style.top = (y + 15) + 'px';
+            tooltip.style.transform = 'translate(-50%, 0)';
+
+            const tooltipRect = tooltip.getBoundingClientRect();
+            if (tooltipRect.right > window.innerWidth) {
+                tooltip.style.left = (window.innerWidth - tooltipRect.width / 2 - 10) + 'px';
+            }
+            if (tooltipRect.left < 0) {
+                tooltip.style.left = (tooltipRect.width / 2 + 10) + 'px';
+            }
+            if (tooltipRect.bottom > window.innerHeight) {
+                tooltip.style.top = (y - tooltipRect.height - 15) + 'px';
+                tooltip.style.transform = 'translate(-50%, -10px)';
+            }
+
+            tooltip.classList.add('show');
+        }
+
+        function hideHeaderTooltip() {
+            const tooltip = document.getElementById('header-column-tooltip');
+            tooltip.classList.remove('show');
+        }
+
+        function getMockFailExample(colName, ruleName) {
+             const mockFailures = {
+                 'must_exist': 'None',
+                 'parse_thai': '2024-01-01',
+                 'parse_uk': '01/31/2024',
+                 'parse_us': '31/01/2024',
+                 'parse_iso': 'NotDate',
+                 'to_iso_code': 'BadCode',
+                 'to_float': 'Free',
+                 'chain_exhausted': 'NotDate'
+             };
+             return mockFailures[ruleName] || 'Invalid Value';
+        }
+
+        function getSortedProcesses(processes) {
+            const fixedNames = ['must_exist', 'chain_exhausted'];
+            const sortable = processes
+                .filter(p => !fixedNames.includes(p.name))
+                .sort((a, b) => b.pass - a.pass);
+            let sIdx = 0;
+            return processes.map(p => fixedNames.includes(p.name) ? p : sortable[sIdx++]);
+        }
+
+        function renderMonadSquishy(quality) {
+            const db = dbDetails[currentDataset] || dbDetails["clean_data"];
+            const totalRowsStr = db.meta.rows;
+            let totalRowsNum = parseFloat(totalRowsStr) * (totalRowsStr.includes('M') ? 1000000 : (totalRowsStr.includes('B') ? 1000000000 : 1));
+
+            const stepsContainer = document.getElementById("pipeline-steps-container");
+            stepsContainer.innerHTML = quality.steps.map(step => {
+                const colMatch = step.target.match(/^([\w_]+)/);
+                const colName = colMatch ? colMatch[1] : '';
+
+                return `
+                <div class="bg-white p-3.5 rounded-2xl border border-gray-200 shadow-xs shrink-0 h-[160px] flex flex-col">
+                    <div class="flex items-center justify-between gap-2 pb-2 mb-1.5 border-b border-gray-100 shrink-0">
+                        <span class="text-[11px] text-drive-textVariant truncate"><span class="font-semibold text-drive-text uppercase">${step.target}</span></span>
+                    </div>
+                    <div class="flex-1 min-h-0 flex flex-col">
+                        ${getSortedProcesses(step.processes).map(proc => {
+                            const passRowsNum = Math.round((proc.pass / 100) * totalRowsNum);
+                            const failRowsNum = Math.round((proc.fail / 100) * totalRowsNum);
+                            const skipRowsNum = Math.round((proc.skip / 100) * totalRowsNum);
+                            
+                            const failExample = getMockFailExample(colName, proc.name);
+
+                            return `
+                            <div class="flex-1 min-h-0 flex items-center group hover:bg-gray-50 px-1 -mx-1 rounded-lg transition-colors">
+                                <span class="w-[130px] shrink-0 text-right pr-3 text-[10px] font-mono leading-tight truncate ${(proc.fail > 0 && proc.name !== 'must_exist') ? 'text-red-600 font-bold' : 'text-drive-textVariant'} flex items-center justify-end">
+                                    ${(proc.fail > 0 && proc.name !== 'must_exist' && proc.name !== 'chain_exhausted') ? `<svg class="w-3 h-3 mr-1 text-red-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>` : ''}
+                                    ${proc.name}
+                                </span>
+                                <div class="flex-1 h-2 bg-gray-100 flex rounded-full overflow-hidden relative custom-tooltip-container" onmouseleave="hideTooltip()">
+                                    ${proc.fail > 0 ? `<div onclick="investigateData('${colName}', '${proc.name}', 'fail')" onmousemove="showTooltip(event, '${colName}', '${proc.name}', 'failed', ${failRowsNum}, '${failExample}')" class="bg-red-500 h-full bar-segment cursor-pointer hover:opacity-80 transition-opacity" style="width: 0%" data-width="${proc.fail}%"></div>` : ''}
+                                    ${proc.pass > 0 ? `<div onclick="investigateData('${colName}', '${proc.name}', 'pass')" onmousemove="showTooltip(event, '${colName}', '${proc.name}', 'passed', ${passRowsNum})" class="bg-green-500 h-full bar-segment border-l border-white/30 cursor-pointer hover:opacity-80 transition-opacity" style="width: 0%" data-width="${proc.pass}%"></div>` : ''}
+                                    ${proc.skip > 0 ? `<div onclick="investigateData('${colName}', '${proc.name}', 'skip')" onmousemove="showTooltip(event, '${colName}', '${proc.name}', 'skipped', ${skipRowsNum})" class="bg-gray-400 h-full bar-segment border-l border-white/30 cursor-pointer hover:opacity-80 transition-opacity" style="width: 0%" data-width="${proc.skip}%"></div>` : ''}
+                                </div>
+                            </div>
+                            `;
+                        }).join("")}
+                    </div>
+                </div>
+            `}).join("");
+
+            const chartContainer = document.getElementById("ai-recommender-chart");
+            chartContainer.innerHTML = quality.ai_recommender.map(rec => `
+                <div class="flex items-center h-4 group relative">
+                    <span class="absolute right-[100%] mr-2.5 text-[10px] font-mono text-drive-textVariant whitespace-nowrap">${rec.name}</span>
+                    <div class="${rec.color} h-full bar-segment rounded flex items-center justify-end px-1.5" style="width: 0%" data-width="${rec.val}%">
+                        ${rec.val > 10 ? `<span class="text-[9px] text-white font-medium">${rec.val}%</span>` : ''}
+                    </div>
+                </div>
+            `).join("");
+
+            setTimeout(() => {
+                document.querySelectorAll('.bar-segment').forEach(bar => {
+                    bar.style.width = bar.getAttribute('data-width');
+                });
+            }, 100);
+        }
+
+        function investigateData(colName, ruleName = null, state = null) {
+            if (ruleName && state) {
+                openInvestigateModal(colName, ruleName, state);
+                return;
+            }
+
+            currentFilter = colName;
+            rowFilterState = { colName, ruleName, state };
+            applyPreviewFilters();
+            switchTab('preview');
+        }
+
+        function openInvestigateModal(colName, ruleName, state) {
+            const db = dbDetails[currentDataset] || dbDetails["clean_data"];
+            const schema = db.schema;
+            const targetColIndex = schema.findIndex(c => c.name === colName);
+
+            const statusLabel = { pass: 'Passed', fail: 'Failed', skip: 'Skipped' }[state] || state;
+
+            document.getElementById('investigate-modal-title').innerText = colName;
+            document.getElementById('investigate-modal-subtitle').innerText = `Rule: ${ruleName}  •  Status: ${statusLabel}`;
+
+            let rows = [];
+            if (targetColIndex !== -1) {
+                rows = db.sample.filter(row => {
+                    const val = String(row[targetColIndex]).trim();
+                    const isSkip = !val || val === 'N/A' || val === 'null' || val === '';
+                    const isFail = !isSkip && (val.includes('/') || /[ก-๙]/.test(val) || (val.includes('-') && val.split('-')[0].length !== 4));
+                    const isPass = !isSkip && !isFail;
+
+                    if (state === 'skip') return isSkip;
+                    if (state === 'fail') return isFail;
+                    if (state === 'pass') return isPass;
+                    return true;
+                });
+            }
+
+            const schemaIndices = targetColIndex !== -1
+                ? [...new Set([0, targetColIndex])].sort((a, b) => a - b)
+                : schema.map((_, i) => i);
+
+            document.getElementById('investigate-modal-head').innerHTML = `
+                <tr>
+                    ${schemaIndices.map(i => `
+                        <th class="px-4 py-2.5 text-left font-medium text-[11px] uppercase tracking-wide ${i === targetColIndex ? 'text-red-700 bg-red-50' : 'text-drive-textVariant'} border-b border-gray-200">${schema[i].name}</th>
+                    `).join('')}
+                </tr>
+            `;
+
+            document.getElementById('investigate-modal-body').innerHTML = rows.length > 0 ? rows.map(row => `
+                <tr class="hover:bg-gray-50 transition-colors">
+                    ${schemaIndices.map(i => {
+                        const cell = row[i];
+                        const display = (cell !== undefined && cell !== null && cell !== '') ? cell : `<span class="text-gray-300 italic">Empty</span>`;
+                        return `<td class="px-4 py-2.5 whitespace-nowrap ${i === targetColIndex ? 'bg-red-50/40 font-medium text-red-900' : 'text-drive-text'}">${display}</td>`;
+                    }).join('')}
+                </tr>
+            `).join('') : `<tr><td colspan="${schemaIndices.length}" class="px-4 py-10 text-center text-drive-textVariant bg-gray-50/50">No rows matching the criteria found in sample data</td></tr>`;
+
+            document.getElementById('investigate-modal-count').innerText = `Found ${rows.length.toLocaleString()} rows matching the criteria (from available sample data)`;
+
+            document.getElementById('investigate-modal').classList.remove('hidden');
+        }
+
+        function closeInvestigateModal() {
+            document.getElementById('investigate-modal').classList.add('hidden');
+        }
+
+        function clearPreviewFilter() {
+            currentFilter = "";
+            rowFilterState = null;
+            selectedStartDate = "";
+            selectedEndDate = "";
+            columnFilters = {};
+            columnSorts = {};
+            
+            const headEl = document.getElementById("preview-head");
+            if(headEl) headEl.removeAttribute('data-schema-key');
+
+            updateDateButtonLabel();
+            document.getElementById('preview-rows-limit').value = "10";
+            applyPreviewFilters();
+        }
+
+        function handleGlobalSearch(keyword) {
+            const query = keyword.toLowerCase().trim();
+            const allFiles = getAllDatasetsFlat();
+            if(!query) {
+                renderSidebar();
+                renderGlobalDatasetTable();
+                return;
+            }
+            
+            const listContainer = document.getElementById("dataset-nav-list");
+            listContainer.innerHTML = "";
+            const filtered = allFiles.filter(f => f.name.toLowerCase().includes(query) || f.path.toLowerCase().includes(query) || f.zoneName.toLowerCase().includes(query));
+            
+            filtered.forEach(item => {
+                const isActive = item.id === currentDataset;
+                const itemElement = document.createElement("div");
+                itemElement.innerHTML = `
+                    <a href="#" onclick="loadDataset('${item.id}', '${item.zoneName}'); return false;" 
+                       title="${item.name} (${item.zoneName})"
+                       class="flex items-center px-3 py-2 rounded-xl text-[13px] transition-all nav-pill group select-none ${isActive ? 'active shadow-xs' : 'text-drive-textVariant'}">
+                        <svg class="w-4 h-4 mr-3 shrink-0 text-blue-500" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/>
+                        </svg>
+                        <span class="sidebar-text truncate flex-1 font-medium">${item.name}</span>
+                    </a>
+                `;
+                listContainer.appendChild(itemElement.firstElementChild);
+            });
+        }
+
+        function updateQualityLayoutMode() {
+            const wrapper = document.getElementById('detail-content-area');
+            const qualityTab = document.getElementById('tab-quality');
+            if (!wrapper || !qualityTab) return;
+
+            const isQualityActive = qualityTab.classList.contains('active');
+            const isDesktop = window.innerWidth >= 1280;
+
+            wrapper.classList.toggle('quality-desktop-fit', isQualityActive && isDesktop);
+        }
+
+        function syncQualityStepsHeight() {
+            const stepsArea = document.querySelector('#tab-quality .quality-steps-area');
+            if (stepsArea) stepsArea.style.height = '';
+            updateQualityLayoutMode();
+        }
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.className = 'tab-btn border-transparent text-drive-textVariant hover:text-drive-text hover:border-gray-300 whitespace-nowrap py-2.5 px-1 border-b-[3px] font-medium text-sm flex items-center transition-colors';
+            });
+            document.getElementById('tab-btn-' + tabId).className = 'tab-btn active text-drive-primary whitespace-nowrap py-2.5 px-1 border-b-[3px] border-drive-primary font-medium text-sm flex items-center transition-colors';
+            
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.getElementById('tab-' + tabId).classList.add('active');
+
+            updateQualityLayoutMode();
+
+            if (tabId === 'preview') {
+                applyPreviewFilters();
+            }
+
+            if (tabId === 'quality') {
+                document.querySelectorAll('.bar-segment').forEach(bar => {
+                    bar.style.width = '0%';
+                    setTimeout(() => bar.style.width = bar.getAttribute('data-width'), 50);
+                });
+                updateQualityLayoutMode();
+                setTimeout(updateQualityLayoutMode, 100);
+            }
+
+            if (tabId === 'lineage') {
+                setTimeout(drawLineageConnections, 50);
+            }
+        }
+
+        function initQualityChart(dataToRender = rawQualityTrendData) {
+            const ctx = document.getElementById('qualityChart').getContext('2d');
+            
+            if (qualityChartInstance) {
+                qualityChartInstance.destroy();
+            }
+
+            const labels = dataToRender.map(d => d.label);
+            const dataPass = dataToRender.map(d => d.pass);
+            const dataFail = dataToRender.map(d => d.fail);
+            const dataSkip = dataToRender.map(d => d.skip);
+
+            qualityChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Passed',
+                            data: dataPass,
+                            borderColor: '#22c55e', 
+                            backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                            borderWidth: 2,
+                            tension: 0.3,
+                            fill: false,
+                            pointBackgroundColor: '#22c55e'
+                        },
+                        {
+                            label: 'Failed',
+                            data: dataFail,
+                            borderColor: '#ef4444', 
+                            backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                            borderWidth: 2,
+                            tension: 0.3,
+                            fill: false,
+                            pointBackgroundColor: '#ef4444'
+                        },
+                        {
+                            label: 'Skipped',
+                            data: dataSkip,
+                            borderColor: '#9ca3af', 
+                            backgroundColor: 'rgba(156, 163, 175, 0.1)',
+                            borderWidth: 2,
+                            tension: 0.3,
+                            fill: false,
+                            pointBackgroundColor: '#9ca3af',
+                            borderDash: [5, 5] 
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { boxWidth: 12, usePointStyle: true, font: { family: 'Inter, sans-serif', size: 11 } } },
+                        tooltip: {
+                            titleFont: { family: 'Inter' },
+                            bodyFont: { family: 'Inter' },
+                            callbacks: { label: (ctx) => `${ctx.dataset.label}: ${ctx.parsed.y}%` }
+                        }
+                    },
+                    scales: {
+                        y: { min: 0, max: 100, beginAtZero: true, grid: { color: '#f3f4f6' }, ticks: { font: { family: 'Inter', size: 10 }, callback: (v) => v } },
+                        x: { grid: { display: false }, ticks: { font: { family: 'Inter', size: 10 } } }
+                    },
+                    onClick: handleChartClick
+                }
+            });
+        }
+
+        function handleChartClick(event, elements) {
+            if (!elements || elements.length === 0) return;
+            
+            const firstPoint = elements[0];
+            const label = qualityChartInstance.data.labels[firstPoint.index];
+            
+            const dateLabelEl = document.getElementById("execution-date-label");
+            dateLabelEl.innerText = "Pipeline execution results for: " + label + " (Simulated Data)";
+            dateLabelEl.classList.remove("hidden");
+
+            const db = dbDetails[currentDataset] || dbDetails["clean_data"];
+            let simulatedQuality = JSON.parse(JSON.stringify(db.quality));
+
+            simulatedQuality.steps.forEach(step => {
+                step.processes.forEach(proc => {
+                    const variance = Math.floor(Math.random() * 30) - 15;
+                    if (proc.pass > 0 && proc.fail > 0) {
+                         proc.pass = Math.max(0, Math.min(100, proc.pass + variance));
+                         proc.fail = Math.max(0, Math.min(100, 100 - proc.pass - proc.skip));
+                    }
+                });
+            });
+            renderMonadSquishy(simulatedQuality);
+            syncQualityStepsHeight();
+        }
+
+        function renderLineage() {
+            const container = document.getElementById('lineage-container');
+            if (!container) return;
+
+            const renderNode = (id, label, opts = {}) => {
+                const { isMain = false, position = 'relative', extraStyle = '' } = opts;
+                return `
+                    <div id="${id}" class="lineage-node flex items-center px-3 py-2.5 bg-white border ${isMain ? 'border-emerald-400 bg-emerald-50/30 ring-1 ring-emerald-400' : 'border-indigo-200'} rounded-md shadow-sm w-[260px] z-10 ${position} cursor-default min-h-[44px]" style="${extraStyle}">
+                        <svg class="w-4 h-4 ${isMain ? 'text-emerald-500' : 'text-indigo-500'} mr-2.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                        <div class="flex flex-col min-w-0 flex-1 text-left">
+                            <span class="text-[11px] font-semibold text-gray-700 w-full tracking-wide uppercase break-words leading-tight">${label}</span>
+                        </div>
+                    </div>
+                `;
+            };
+
+            let html = `<div class="relative w-full min-h-[340px] py-6">`;
+            html += `<svg id="lineage-svg" class="absolute inset-0 w-full h-full pointer-events-none z-0"></svg>`;
+
+            html += `<div class="relative z-10 flex flex-col justify-center gap-14">`;
+            html += `<div class="flex items-center gap-20">`;
+            html += renderNode('landing-1', 'LANDING.RAW.MOCK_TRADE_DATA');
+            html += renderNode('staging-1', 'STAGING.PUBLIC.CLEAN_DATA');
+            html += `</div>`;
+
+            html += `<div class="flex items-center gap-20">`;
+            html += renderNode('landing-2', 'LANDING.RAW.QUALITY_LOGS');
+            html += renderNode('staging-2', 'STAGING.PUBLIC.QUALITY_SUMMARY');
+            html += `</div>`;
+            html += `</div>`;
+
+            html += renderNode('integration-node', 'DATALAKE.CLEAN_DATA (Hive: run_date)', { isMain: true, position: 'absolute', extraStyle: 'right: 24px; top: 50%; transform: translateY(-50%);' });
+
+            html += `</div>`;
+            container.innerHTML = html;
+        }
+
+        function drawLineageConnections() {
+            const svg = document.getElementById('lineage-svg');
+            const integrationNode = document.getElementById('integration-node');
+            if (!svg || !integrationNode) return;
+
+            const wrapperRect = svg.getBoundingClientRect();
+            if (wrapperRect.width === 0) return;
+
+            const getRelativePos = (el, side) => {
+                const rect = el.getBoundingClientRect();
+                return {
+                    x: (side === 'left' ? rect.left : rect.right) - wrapperRect.left,
+                    y: rect.top + rect.height / 2 - wrapperRect.top
+                };
+            };
+
+            let svgContent = '';
+
+            const l1 = document.getElementById('landing-1');
+            const s1 = document.getElementById('staging-1');
+            if (l1 && s1) svgContent += drawBezierPath(getRelativePos(l1, 'right'), getRelativePos(s1, 'left'));
+
+            const l2 = document.getElementById('landing-2');
+            const s2 = document.getElementById('staging-2');
+            if (l2 && s2) svgContent += drawBezierPath(getRelativePos(l2, 'right'), getRelativePos(s2, 'left'));
+
+            const intRect = integrationNode.getBoundingClientRect();
+            const intLeftX = intRect.left - wrapperRect.left;
+            const intTopEntryY = intRect.top + intRect.height * 0.32 - wrapperRect.top;
+            const intBottomEntryY = intRect.top + intRect.height * 0.68 - wrapperRect.top;
+
+            if (s1) svgContent += drawBezierPath(getRelativePos(s1, 'right'), { x: intLeftX, y: intTopEntryY });
+            if (s2) svgContent += drawBezierPath(getRelativePos(s2, 'right'), { x: intLeftX, y: intBottomEntryY });
+
+            svg.innerHTML = svgContent;
+        }
+
+        function drawBezierPath(p1, p2) {
+            const cp1x = p1.x + Math.abs(p2.x - p1.x) * 0.5;
+            const cp2x = p2.x - Math.abs(p2.x - p1.x) * 0.5;
+            return `
+                <path d="M ${p1.x},${p1.y} C ${cp1x},${p1.y} ${cp2x},${p2.y} ${p2.x - 6},${p2.y}" fill="none" stroke="#94a3b8" stroke-width="1.5"/>
+                <polygon points="${p2.x},${p2.y} ${p2.x - 6},${p2.y - 4} ${p2.x - 6},${p2.y + 4}" fill="#94a3b8" />
+            `;
+        }
+
+        window.addEventListener('resize', () => {
+            if (document.getElementById('tab-lineage').classList.contains('active')) {
+                drawLineageConnections();
+            }
+            if (document.getElementById('tab-quality').classList.contains('active')) {
+                updateQualityLayoutMode();
+            }
+            closeUserMenu();
+        });
+
+        window.onload = () => {
+            showDashboard();
+            enableDragToScroll(document.getElementById('tabs-scroll'));
+        };
+    </script>
+</body>
+</html>
