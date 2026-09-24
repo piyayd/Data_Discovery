@@ -366,9 +366,9 @@
                                         <th class="px-6 py-3.5 font-medium">Name</th>
                                         <th class="px-6 py-3.5 font-medium">Source Organization</th>
                                         <th class="px-6 py-3.5 font-medium">Record Count (Rows)</th>
-                                        <th class="px-6 py-3.5 font-medium text-green-700">Passed</th>
-                                        <th class="px-6 py-3.5 font-medium">Nulls</th>
-                                        <th class="px-6 py-3.5 font-medium text-red-500">Errors</th>
+                                        <th class="px-6 py-3.5 font-medium text-green-700">Pass</th>
+                                        <th class="px-6 py-3.5 font-medium text-red-500">Chain Exhausted</th>
+                                        <th class="px-6 py-3.5 font-medium text-blue-500">Completeness</th>
                                         <th class="px-6 py-3.5 font-medium">Last Modified Date</th>
                                         <th class="px-6 py-3.5 font-medium">E-Score</th>
                                     </tr>
@@ -1144,8 +1144,8 @@
                     <td class="px-6 py-3.5 whitespace-nowrap"><span class="text-xs text-drive-textVariant">${item.zoneName}</span></td>
                     <td class="px-6 py-3.5 whitespace-nowrap text-xs font-mono text-drive-textVariant">${item.rows}</td>
                     <td class="px-6 py-3.5 whitespace-nowrap text-xs font-medium text-green-700">${item.passed}%</td>
-                    <td class="px-6 py-3.5 whitespace-nowrap text-xs ${item.nulls > 10 ? 'text-orange-600 font-medium' : 'text-drive-textVariant'}">${item.nulls}%</td>
                     <td class="px-6 py-3.5 whitespace-nowrap text-xs ${item.invalid > 10 ? 'text-red-600 font-medium' : 'text-drive-textVariant'}">${item.invalid}%</td>
+                    <td class="px-6 py-3.5 whitespace-nowrap text-xs ${item.nulls > 10 ? 'text-orange-600 font-medium' : 'text-drive-textVariant'}">${item.nulls}%</td>
                     <td class="px-6 py-3.5 whitespace-nowrap text-xs text-drive-textVariant">${item.updated}</td>
                     <td class="px-6 py-3.5 whitespace-nowrap">
                         <span class="px-2 py-0.5 rounded-full text-[11px] font-mono font-medium border ${escoreColor}">
